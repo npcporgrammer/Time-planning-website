@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#f2efe7">
+  <title>日程规划表</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23263d32'/%3E%3Crect x='12' y='12' width='17' height='17' rx='3' fill='%23fbf9f2'/%3E%3Crect x='35' y='12' width='17' height='17' rx='3' fill='%23d7ae7a'/%3E%3Crect x='12' y='35' width='17' height='17' rx='3' fill='%23fbf9f2'/%3E%3Crect x='35' y='35' width='17' height='17' rx='3' fill='%23fbf9f280'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" class="svg-sprite" aria-hidden="true">
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5.5" width="17" height="15" rx="3"/><path d="M7.5 3.5v4M16.5 3.5v4M3.5 10h17"/><path d="M8 13.5h2M14 13.5h2M8 17h2M14 17h2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2" class="fill-dot"/><circle cx="12" cy="12" r="1.2" class="fill-dot"/><circle cx="19" cy="12" r="1.2" class="fill-dot"/></symbol>
+    <symbol id="i-grip" viewBox="0 0 24 24"><circle cx="9" cy="7" r="1.2" class="fill-dot"/><circle cx="15" cy="7" r="1.2" class="fill-dot"/><circle cx="9" cy="12" r="1.2" class="fill-dot"/><circle cx="15" cy="12" r="1.2" class="fill-dot"/><circle cx="9" cy="17" r="1.2" class="fill-dot"/><circle cx="15" cy="17" r="1.2" class="fill-dot"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><path d="M4 20l4.2-1 10.4-10.4a2.2 2.2 0 0 0-3.1-3.1L5.2 15.9 4 20Z"/><path d="M13.8 6.8l3.4 3.4"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5M14 11v5"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4.5 20h15"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4.5 20h15"/></symbol>
+    <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M4.5 15.5l7.8-7.8a2.5 2.5 0 0 1 3.5 0l3 3a2.5 2.5 0 0 1 0 3.5L12 21H7l-2.5-2.5a2.1 2.1 0 0 1 0-3Z"/><path d="M10 9l5 5M8 21h12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.3 4.2L19 6.8"/></symbol>
+    <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.5 5.2L18.7 10l-5.2 1.8L12 17l-1.5-5.2L5.3 10l5.2-1.8L12 3Z"/><path d="M19 16l.7 2.1 2.1.7-2.1.7L19 21.7l-.7-2.2-2.1-.7 2.1-.7L19 16Z"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4l9 16H3L12 4Z"/><path d="M12 9.5v4.5M12 17h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 10.5V16M12 7.8h.01"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M14 7l5 5-5 5"/></symbol>
+    <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 7L4 12l5 5"/><path d="M4 12h9a6 6 0 1 1 0 12h-1"/></symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8 12.2l2.7 2.6 5.4-5.6"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5.5 20c.6-3.5 3-5.4 6.5-5.4s5.9 1.9 6.5 5.4"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3.5c1.6 3.3-2.7 5.4-1.6 8.3.4 1.1 1.5 1.5 2.2.7 1.1-1.3.6-3 .4-4.2 2.1 1.6 4.1 4.1 4.1 7 0 3.2-2.4 5.2-5.1 5.2S6.8 18.3 6.8 15c0-4.6 4.1-7.2 5.2-11.5Z"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.4"/><path d="M16 5.5A1.5 1.5 0 0 0 14.5 4h-8A2.5 2.5 0 0 0 4 6.5v8A1.5 1.5 0 0 0 5.5 16"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11"/><circle cx="4.5" cy="6.5" r=".9" class="fill-dot"/><circle cx="4.5" cy="12" r=".9" class="fill-dot"/><circle cx="4.5" cy="17.5" r=".9" class="fill-dot"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 4.5h11v16l-5.5-3.8-5.5 3.8v-16Z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10.2 13.8a4 4 0 0 1 0-5.7l1.6-1.6a4 4 0 0 1 5.7 5.7l-1 1"/><path d="M13.8 10.2a4 4 0 0 1 0 5.7l-1.6 1.6a4 4 0 0 1-5.7-5.7l1-1"/></symbol>
+    <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <button class="profile-orb" id="profileButton" type="button" aria-label="打开个人信息与打卡记录" title="个人信息与打卡">
+          <span id="profileInitial">你</span>
+          <i class="profile-orb-dot" id="profileOrbDot" aria-hidden="true"></i>
+        </button>
+        <a class="brand-text" href="#" id="brandHome" aria-label="回到今天所在周">
+          <strong class="brand-greeting" id="brandGreeting">hi！朋友，我们要计划什么。</strong>
+          <small id="profileMeta">WEEKLY LOG · 本地离线</small>
+        </a>
+      </div>
+
+      <nav class="week-nav" aria-label="周切换">
+        <button class="icon-btn nav-arrow" id="prevWeek" type="button" aria-label="上一周">
+          <svg class="icon"><use href="#i-chevron-left"></use></svg>
+        </button>
+        <div class="week-nav-copy">
+          <span class="week-range" id="weekRange">正在加载…</span>
+          <span class="week-meta" id="weekMeta">第 — 周</span>
+        </div>
+        <button class="icon-btn nav-arrow" id="nextWeek" type="button" aria-label="下一周">
+          <svg class="icon"><use href="#i-chevron-right"></use></svg>
+        </button>
+        <span class="nav-divider" aria-hidden="true"></span>
+        <button class="text-btn" id="thisWeek" type="button">本周</button>
+      </nav>
+
+      <div class="top-actions">
+        <span class="local-pill" title="所有内容只保存在本机，不会上传">
+          <span class="status-dot" aria-hidden="true"></span>
+          本地离线
+        </span>
+        <button class="today-trigger" id="todayButton" type="button" aria-expanded="false" aria-controls="todayPanel" aria-label="打开当日待办">
+          <svg class="icon"><use href="#i-list"></use></svg>
+          <span class="today-trigger-label">当日待办</span>
+          <span class="today-trigger-count" id="todayButtonCount">0</span>
+        </button>
+        <button class="btn btn-dark" id="calendarOpen" type="button">
+          <svg class="icon"><use href="#i-calendar"></use></svg>
+          <span>日历</span>
+        </button>
+        <div class="menu-wrap">
+          <button class="icon-btn menu-trigger" id="menuButton" type="button" aria-label="更多操作" aria-expanded="false" aria-controls="appMenu">
+            <svg class="icon"><use href="#i-more"></use></svg>
+          </button>
+          <div class="app-menu" id="appMenu" hidden>
+            <button type="button" class="menu-item" data-menu-action="export">
+              <svg class="icon"><use href="#i-download"></use></svg>
+              <span>导出备份</span>
+            </button>
+            <button type="button" class="menu-item" data-menu-action="import">
+              <svg class="icon"><use href="#i-upload"></use></svg>
+              <span>导入备份</span>
+            </button>
+            <div class="menu-sep" role="separator"></div>
+            <button type="button" class="menu-item" data-menu-action="clear-week">
+              <svg class="icon"><use href="#i-eraser"></use></svg>
+              <span>清空本周安排</span>
+            </button>
+            <button type="button" class="menu-item is-danger" data-menu-action="clear-all">
+              <svg class="icon"><use href="#i-trash"></use></svg>
+              <span>清空全部数据</span>
+            </button>
+            <div class="menu-foot">数据只保存在本机浏览器</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="today-panel" id="todayPanel" role="dialog" aria-modal="false" aria-label="当日待办" hidden>
+        <div class="today-panel-head">
+          <div class="today-panel-title">
+            <p class="eyebrow">DAILY NOTES</p>
+            <h2>当日待办</h2>
+          </div>
+          <div class="today-date-nav">
+            <button class="icon-btn" id="todoPrevDate" type="button" aria-label="前一天">
+              <svg class="icon"><use href="#i-chevron-left"></use></svg>
+            </button>
+            <input type="date" id="todoDateInput" min="2026-01-01" max="2029-12-31" aria-label="待办日期">
+            <button class="icon-btn" id="todoNextDate" type="button" aria-label="后一天">
+              <svg class="icon"><use href="#i-chevron-right"></use></svg>
+            </button>
+            <button class="text-btn today-reset-btn" id="todoToday" type="button">今天</button>
+          </div>
+          <button class="icon-btn today-panel-close" id="todayClose" type="button" aria-label="收起当日待办">
+            <svg class="icon"><use href="#i-x"></use></svg>
+          </button>
+        </div>
+
+        <div class="today-progress">
+          <div class="today-progress-copy">
+            <span id="todayDateLabel">今天</span>
+            <strong id="todayProgressText">已完成 0 / 0</strong>
+          </div>
+          <div class="today-progress-track" aria-hidden="true"><i id="todayProgressBar"></i></div>
+        </div>
+
+        <div class="today-panel-body">
+          <section class="today-schedule-section">
+            <div class="today-section-head">
+              <h3><svg class="icon"><use href="#i-clock"></use></svg>当日日程</h3>
+              <span id="todayScheduleCount">0 / 0</span>
+            </div>
+            <div class="today-schedule-list" id="todayScheduleList"></div>
+          </section>
+
+          <section class="today-notes-section">
+            <div class="today-section-head">
+              <h3><svg class="icon"><use href="#i-list"></use></svg>小事清单</h3>
+              <span id="todayTodoCount">0 / 0</span>
+            </div>
+            <div class="today-notes-grid" id="todayTodoList"></div>
+            <form class="todo-form" id="todoForm" autocomplete="off">
+              <input type="text" id="todoInput" maxlength="80" placeholder="写一条小事，回车添加…" aria-label="新建小事">
+              <button class="todo-add-btn" type="submit" aria-label="添加小事">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+              </button>
+            </form>
+          </section>
+        </div>
+        <div class="today-panel-foot">
+          <span><svg class="icon"><use href="#i-info"></use></svg>日程完成状态会同步回时间格；小纸条只保存在本机。</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="planner-column" aria-label="周计划">
+        <div class="planner-heading">
+          <div class="heading-copy">
+            <p class="eyebrow">WEEK AT A GLANCE</p>
+            <div class="heading-line">
+              <h1>贵在坚持，始于计划</h1>
+              <span class="outline-pill" id="weekPill">7 天独立时间轴</span>
+              <button class="reuse-week-btn" id="reuseLastWeek" type="button" title="复用上周的日程，并顺延未完成内容">
+                <svg class="icon"><use href="#i-copy"></use></svg>
+                复用上周
+              </button>
+            </div>
+          </div>
+          <div class="heading-meta">
+            <span class="save-state" id="saveState"><span class="status-dot" aria-hidden="true"></span>已保存到本机</span>
+            <span class="meta-sep" aria-hidden="true"></span>
+            <span>拖动每行底边可调高度</span>
+          </div>
+        </div>
+
+        <section class="board-panel" aria-label="一周时间表">
+          <div class="board-scroll" id="boardScroll">
+            <div class="day-grid" id="dayGrid" aria-live="polite"></div>
+          </div>
+          <div class="board-caption">
+            <span><span class="caption-mark resize-mark" aria-hidden="true"></span>拖动行底边调整格子高度，靠近其他日期的底边会顿挫对齐</span>
+            <span><span class="caption-mark clock-mark" aria-hidden="true"></span>每日右上角可单独编辑时间轴</span>
+            <span class="caption-hint"><svg class="icon"><use href="#i-info"></use></svg>双击日程可查看详情与完成状态</span>
+          </div>
+        </section>
+
+        <section class="composer" id="composer" aria-labelledby="composerTitle">
+          <div class="composer-head">
+            <div class="composer-title">
+              <span class="composer-symbol" aria-hidden="true">
+                <svg class="icon"><use href="#i-spark"></use></svg>
+              </span>
+              <div>
+                <p class="eyebrow">SCHEDULE BLOCKS</p>
+                <h2 id="composerTitle">日程块工作台</h2>
+              </div>
+            </div>
+            <p class="composer-sub">定义颜色和内容，右侧托盘会同步更新</p>
+          </div>
+
+          <form class="block-form" id="blockForm" autocomplete="off">
+            <div class="color-field">
+              <span class="field-label">颜色</span>
+              <div class="color-controls">
+                <div class="color-swatches" id="colorSwatches" role="group" aria-label="选择日程块颜色"></div>
+                <label class="custom-color" title="自定义颜色">
+                  <input type="color" id="blockColor" value="#3F705B" aria-label="自定义颜色">
+                  <span class="custom-color-face" id="customColorFace" aria-hidden="true"></span>
+                </label>
+              </div>
+            </div>
+
+            <label class="text-field">
+              <span class="field-label">内容</span>
+              <input type="text" id="blockTitle" maxlength="24" placeholder="例如：晨间跑步、专注写作…" required>
+            </label>
+
+            <button class="btn btn-accent" id="blockSubmit" type="submit">
+              <svg class="icon"><use href="#i-plus"></use></svg>
+              <span>添加日程块</span>
+            </button>
+            <button class="btn btn-ghost" id="cancelEdit" type="button" hidden>取消编辑</button>
+          </form>
+
+          <div class="library-row">
+            <div class="library-label">
+              <svg class="icon"><use href="#i-grid"></use></svg>
+              <span>已定义</span>
+              <span class="count-mini" id="libraryCount">0</span>
+            </div>
+            <div class="library-list" id="libraryList"></div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="sidebar" aria-label="日程块与使用提示">
+        <section class="palette-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">DRAG &amp; DROP</p>
+              <h2>日程块托盘</h2>
+            </div>
+            <span class="count-badge" id="paletteCount">0</span>
+          </div>
+          <p class="panel-desc">按住卡片，拖入任意空白时间格。</p>
+          <div class="palette-list" id="paletteList"></div>
+          <div class="palette-footer">
+            <span class="snap-icon" aria-hidden="true"></span>
+            拖入后自动贴合格子边界
+          </div>
+        </section>
+
+        <section class="trash-panel" id="trashPanel" data-recycle-drop="true" aria-labelledby="trashTitle">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">RECYCLE BIN</p>
+              <h2 id="trashTitle">回收站</h2>
+            </div>
+            <span class="count-badge" id="trashCount">0</span>
+          </div>
+          <p class="panel-desc">删除的日程块会先来到这里。把右侧卡片拖进回收站，也可以回收。</p>
+          <div class="trash-list" id="trashList"></div>
+          <div class="trash-footer">
+            <span><svg class="icon"><use href="#i-undo"></use></svg>支持还原</span>
+            <button class="text-btn" id="clearTrash" type="button" hidden>清空回收站</button>
+          </div>
+        </section>
+
+        <section class="guide-card">
+          <div class="guide-head">
+            <svg class="icon"><use href="#i-spark"></use></svg>
+            <span>三步开始规划</span>
+          </div>
+          <ol class="guide-list">
+            <li><span>01</span><p>在左下角定义日程块，取一个名字、选一种颜色。</p></li>
+            <li><span>02</span><p>从右侧托盘拖入空白格；双击已放置的日程，可以写详情和标记完成。</p></li>
+            <li><span>03</span><p>拖动行底边调整高度，靠近其他日期的同一底边会自动对齐。</p></li>
+          </ol>
+          <p class="guide-note"><svg class="icon"><use href="#i-info"></use></svg>日程按日期保存；删除的内容可在回收站还原。</p>
+        </section>
+      </aside>
+    </main>
+
+    <section class="memo-module" aria-label="长期备忘提醒">
+      <button class="memo-ticker is-empty" id="memoTicker" type="button" aria-label="打开长期备忘">
+        <span class="memo-ticker-label">
+          <svg class="icon"><use href="#i-bookmark"></use></svg>
+          <span>长期备忘</span>
+        </span>
+        <span class="memo-ticker-viewport" aria-hidden="true">
+          <span class="memo-ticker-line" id="memoTickerLineA"></span>
+          <span class="memo-ticker-line is-next" id="memoTickerLineB"></span>
+        </span>
+        <span class="memo-ticker-count" id="memoTickerCount">0 条</span>
+        <span class="memo-ticker-arrow" aria-hidden="true">›</span>
+      </button>
+    </section>
+  </div>
+
+  <div class="drag-ghost" id="dragGhost" aria-hidden="true"></div>
+  <div class="drag-trash" id="dragTrash" data-recycle-drop="true" hidden>
+    <span class="drag-trash-icon"><svg class="icon"><use href="#i-trash"></use></svg></span>
+    <span><strong>放入回收站</strong><small>松手即可回收</small></span>
+  </div>
+  <div class="align-guide" id="alignGuide" hidden><span id="alignGuideLabel">已对齐</span></div>
+  <div class="resize-tip" id="resizeTip" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+
+  <dialog class="dialog calendar-dialog" id="calendarDialog" aria-labelledby="calendarTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">DATE NAVIGATOR</p>
+        <h2 id="calendarTitle">选择日期</h2>
+        <p class="dialog-sub">在 2026.01.01 — 2029.12.31 之间切换，日程按日期自动保留。</p>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="calendarDialog" aria-label="关闭日历">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+
+    <div class="cal-toolbar">
+      <button class="icon-btn" id="calPrev" type="button" aria-label="上个月">
+        <svg class="icon"><use href="#i-chevron-left"></use></svg>
+      </button>
+      <div class="cal-selects">
+        <label><span class="sr-only">年份</span><select id="calYear" aria-label="年份"></select></label>
+        <label><span class="sr-only">月份</span><select id="calMonth" aria-label="月份"></select></label>
+      </div>
+      <button class="icon-btn" id="calNext" type="button" aria-label="下个月">
+        <svg class="icon"><use href="#i-chevron-right"></use></svg>
+      </button>
+      <button class="text-btn cal-today-btn" id="calToday" type="button">今天</button>
+    </div>
+
+    <div class="cal-weekdays" aria-hidden="true">
+      <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+
+    <div class="cal-legend">
+      <span><i class="legend-dot is-today"></i>今天</span>
+      <span><i class="legend-dot has-plan"></i>已有安排</span>
+      <span><i class="legend-dot in-week"></i>当前查看周</span>
+    </div>
+
+    <div class="dialog-footer cal-footer">
+      <p class="offline-note"><svg class="icon"><use href="#i-info"></use></svg>完全离线运行；不选日期也可以直接在当前周编写。</p>
+      <button class="btn btn-ghost" type="button" data-close-dialog="calendarDialog">关闭并继续编排</button>
+    </div>
+  </dialog>
+
+  <dialog class="dialog timeline-dialog" id="timelineDialog" aria-labelledby="timelineTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">INDEPENDENT TIME AXIS</p>
+        <h2 id="timelineTitle">编辑时间轴</h2>
+        <p class="dialog-sub" id="timelineSub">这一日拥有独立的时间段与高度。</p>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="timelineDialog" aria-label="关闭时间轴设置">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+
+    <div class="timeline-body">
+      <section class="quick-generate">
+        <div class="section-title">
+          <span>快速生成</span>
+          <small>设定起止时间，自动铺满</small>
+        </div>
+        <div class="quick-grid">
+          <label class="mini-field"><span>开始</span><input type="time" id="genStart" value="08:00" step="300"></label>
+          <label class="mini-field"><span>结束</span><input type="time" id="genEnd" value="22:00" step="300"></label>
+          <label class="mini-field"><span>间隔</span>
+            <select id="genStep">
+              <option value="30">30 分钟</option>
+              <option value="45">45 分钟</option>
+              <option value="60">60 分钟</option>
+              <option value="90" selected>90 分钟</option>
+              <option value="120">120 分钟</option>
+            </select>
+          </label>
+          <button class="btn btn-soft" id="generateTimeline" type="button">生成</button>
+        </div>
+        <p class="form-error" id="timelineError" hidden></p>
+      </section>
+
+      <section class="segment-editor">
+        <div class="section-title">
+          <span>时间段列表</span>
+          <small>直接修改开始与结束时间</small>
+        </div>
+        <div class="timeline-list" id="timelineList"></div>
+        <button class="add-segment" id="addSegment" type="button">
+          <svg class="icon"><use href="#i-plus"></use></svg>
+          添加一个时间段
+        </button>
+      </section>
+
+      <p class="timeline-note">提示：在主视图中直接拖动每行底边，也能调整该格高度。调整后，不在新时间段内的已排日程会被移除。</p>
+    </div>
+
+    <div class="dialog-footer timeline-footer">
+      <button class="btn btn-ghost" id="applyTimelineWeek" type="button">应用到整周</button>
+      <div class="footer-actions">
+        <button class="btn btn-ghost" type="button" data-close-dialog="timelineDialog">取消</button>
+        <button class="btn btn-accent" id="saveTimeline" type="button">保存时间轴</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog confirm-dialog" id="confirmDialog" aria-labelledby="confirmTitle">
+    <div class="confirm-symbol" id="confirmSymbol" aria-hidden="true">
+      <svg class="icon"><use href="#i-alert"></use></svg>
+    </div>
+    <h2 id="confirmTitle">确认操作</h2>
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" id="confirmCancel" type="button">取消</button>
+      <button class="btn btn-danger" id="confirmOk" type="button">确定</button>
+    </div>
+  </dialog>
+
+  <dialog class="dialog reuse-dialog" id="reuseDialog" aria-labelledby="reuseTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">WEEKLY CARRY-OVER</p>
+        <h2 id="reuseTitle">复用上周内容</h2>
+        <p class="dialog-sub">把上周的安排带进这一周，只填入空白时间格，不会覆盖已有日程。</p>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="reuseDialog" aria-label="关闭复用上周">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="reuse-body">
+      <div class="reuse-summary">
+        <div class="reuse-summary-top">
+          <span>上周</span>
+          <strong id="reuseSourceRange">—</strong>
+        </div>
+        <p id="reuseSummaryText">正在读取上周安排…</p>
+      </div>
+      <label class="reuse-option" for="reuseOnlyUnfinished">
+        <input type="checkbox" id="reuseOnlyUnfinished">
+        <span class="reuse-option-copy">
+          <strong>仅顺延未完成日程</strong>
+          <small>不勾选时复用上周全部内容；已完成的日程会重置为新待办，未完成日程连同日志一起顺延。</small>
+        </span>
+      </label>
+      <p class="reuse-preview" id="reusePreview">—</p>
+      <p class="reuse-note"><svg class="icon"><use href="#i-info"></use></svg>时间轴不一致或目标时间格已被占用时，那一条会自动跳过。</p>
+    </div>
+    <div class="dialog-footer">
+      <button class="btn btn-ghost" type="button" data-close-dialog="reuseDialog">取消</button>
+      <button class="btn btn-accent" id="confirmReuse" type="button">
+        <svg class="icon"><use href="#i-copy"></use></svg>
+        复用并顺延
+      </button>
+    </div>
+  </dialog>
+
+  <dialog class="dialog late-reminder-dialog" id="lateReminderDialog" aria-labelledby="lateReminderTitle">
+    <div class="late-reminder-head">
+      <span class="late-reminder-icon" aria-hidden="true">
+        <svg class="icon"><use href="#i-clock"></use></svg>
+      </span>
+      <div class="late-reminder-copy">
+        <p class="eyebrow">LATE CHECK · 22:00</p>
+        <h2 id="lateReminderTitle">你似乎忘了这些事：</h2>
+        <p id="lateReminderSub">今天还有几项待办没有完成。</p>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="lateReminderDialog" aria-label="关闭提醒">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="late-reminder-list" id="lateReminderList"></div>
+    <div class="dialog-footer late-reminder-footer">
+      <p class="offline-note"><svg class="icon"><use href="#i-info"></use></svg>现在有点晚了，先记下来，明天继续也可以。</p>
+      <button class="btn btn-accent" type="button" data-close-dialog="lateReminderDialog">先记下了</button>
+    </div>
+  </dialog>
+
+  <dialog class="dialog nickname-dialog" id="nicknameDialog" aria-labelledby="nicknameTitle">
+    <div class="nickname-hero" aria-hidden="true">
+      <span class="nickname-spark"><svg class="icon"><use href="#i-spark"></use></svg></span>
+    </div>
+    <div class="nickname-body">
+      <p class="eyebrow">FIRST THINGS FIRST</p>
+      <h2 id="nicknameTitle">先认识一下，<br>怎么称呼你？</h2>
+      <p class="dialog-sub">设置一个昵称，让这张周计划更像你的。昵称只保存在本机。</p>
+      <form id="nicknameForm" class="nickname-form" autocomplete="off">
+        <label class="nickname-field">
+          <span>你的昵称</span>
+          <input id="nicknameInput" type="text" maxlength="12" placeholder="例如：小林" required>
+        </label>
+        <p class="form-error" id="nicknameError" hidden></p>
+        <button class="btn btn-accent nickname-submit" type="submit">
+          开始计划
+          <svg class="icon"><use href="#i-arrow-right"></use></svg>
+        </button>
+      </form>
+      <p class="nickname-note"><svg class="icon"><use href="#i-info"></use></svg>之后可以在左上角头像里修改昵称、查看打卡天数。</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog profile-dialog" id="profileDialog" aria-labelledby="profileTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">PERSONAL LOG</p>
+        <h2 id="profileTitle">我的计划档案</h2>
+        <p class="dialog-sub">记录每一次打开周计划的坚持。</p>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="profileDialog" aria-label="关闭个人信息">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="profile-body">
+      <div class="profile-identity">
+        <span class="profile-avatar" id="profileAvatarLarge">你</span>
+        <div class="profile-identity-copy">
+          <p class="eyebrow">YOUR WEEKLY RHYTHM</p>
+          <h3 id="profileNameHeading">朋友</h3>
+          <p id="profileSince">从今天开始记录</p>
+        </div>
+        <span class="checkin-status" id="checkinStatus"><svg class="icon"><use href="#i-check"></use></svg>今日已打卡</span>
+      </div>
+
+      <div class="profile-stats">
+        <div class="profile-stat">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#i-flame"></use></svg></span>
+          <strong id="checkinTotal">0</strong>
+          <span>累计打卡</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#i-check-circle"></use></svg></span>
+          <strong id="checkinStreak">0</strong>
+          <span>连续打卡</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#i-grid"></use></svg></span>
+          <strong id="scheduledTotal">0</strong>
+          <span>全部待办</span>
+        </div>
+        <div class="profile-stat">
+          <span class="profile-stat-icon"><svg class="icon"><use href="#i-check"></use></svg></span>
+          <strong id="completedTotal">0</strong>
+          <span>已完成</span>
+        </div>
+      </div>
+
+      <div class="profile-checkin-row">
+        <p><strong>今天也来规划一下。</strong><span id="checkinTodayText"></span></p>
+        <button class="btn btn-soft" id="profileCheckin" type="button">今日打卡</button>
+      </div>
+
+      <form class="profile-nickname-form" id="profileNicknameForm" autocomplete="off">
+        <label class="nickname-field">
+          <span>修改昵称</span>
+          <input id="profileNickname" type="text" maxlength="12" required>
+        </label>
+        <button class="btn btn-ghost" type="submit">保存昵称</button>
+      </form>
+      <p class="profile-foot"><svg class="icon"><use href="#i-info"></use></svg>打卡按自然日记录，同一天只计一次；待办统计包含时间轴日程与小事清单；所有信息只保存在本机。</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog detail-dialog" id="detailDialog" aria-labelledby="detailTitle">
+    <div class="dialog-head detail-head">
+      <div class="detail-heading">
+        <span class="detail-color-dot" id="detailColorDot" aria-hidden="true"></span>
+        <div>
+          <p class="eyebrow">LOG DETAILS</p>
+          <h2 id="detailTitle">日程详情</h2>
+          <p class="dialog-sub" id="detailWhen">—</p>
+        </div>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="detailDialog" aria-label="关闭日程详情">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="detail-body">
+      <label class="detail-note-label" for="detailNote">更多日志描述</label>
+      <textarea id="detailNote" rows="6" maxlength="2000" placeholder="请输入"></textarea>
+      <p class="detail-hint">双击已放置的日程可以随时回到这里补充记录。</p>
+    </div>
+    <div class="detail-footer">
+      <p class="detail-status" id="detailStatus">待完成</p>
+      <button class="btn detail-complete-btn" id="detailCompleteBtn" type="button">
+        <svg class="icon"><use href="#i-check"></use></svg>
+        <span>标记为已完成</span>
+      </button>
+      <p class="detail-toggle-hint" id="detailToggleHint">完成后，这个日程会在周计划里铺上一层淡灰色。</p>
+    </div>
+  </dialog>
+
+  <dialog class="dialog detail-dialog block-note-dialog" id="blockNoteDialog" aria-labelledby="blockNoteTitle">
+    <div class="dialog-head detail-head">
+      <div class="detail-heading">
+        <span class="detail-color-dot" id="blockNoteColorDot" aria-hidden="true"></span>
+        <div>
+          <p class="eyebrow">BLOCK LOG</p>
+          <h2 id="blockNoteTitle">日志描述</h2>
+          <p class="dialog-sub" id="blockNoteSub">日程块</p>
+        </div>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="blockNoteDialog" aria-label="关闭日志描述编辑">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="detail-body">
+      <label class="detail-note-label" for="blockNoteInput">日志描述</label>
+      <textarea id="blockNoteInput" rows="6" maxlength="2000" placeholder="请输入"></textarea>
+      <p class="detail-hint" id="blockNoteHint">保存后会同步到该日程块已放置的日程。</p>
+    </div>
+    <div class="detail-footer block-note-footer">
+      <div class="block-note-actions">
+        <button class="btn btn-ghost" type="button" data-close-dialog="blockNoteDialog">取消</button>
+        <button class="btn btn-accent" id="blockNoteSave" type="button">
+          <svg class="icon"><use href="#i-check"></use></svg>
+          保存描述
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="dialog memo-dialog" id="memoDialog" aria-labelledby="memoDialogTitle">
+    <div class="dialog-head memo-dialog-head">
+      <div>
+        <p class="eyebrow">LONG-TERM MEMOS</p>
+        <h2 id="memoDialogTitle">长期备忘</h2>
+        <p class="dialog-sub">收纳长期任务、学习网址与备赛计划。滚动提示会按权重随机出现。</p>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="memoDialog" aria-label="关闭长期备忘">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+
+    <div class="memo-dialog-body">
+      <aside class="memo-list-pane">
+        <div class="memo-list-head">
+          <div><span>全部备忘</span><strong id="memoCount">0</strong></div>
+          <button class="memo-new-btn" id="memoNew" type="button">
+            <svg class="icon"><use href="#i-plus"></use></svg>
+            新建
+          </button>
+        </div>
+        <div class="memo-list" id="memoList"></div>
+      </aside>
+
+      <section class="memo-editor-pane">
+        <div class="memo-editor-head">
+          <div>
+            <p class="eyebrow">MEMO DETAILS</p>
+            <h3 id="memoEditorTitle">新建长期备忘</h3>
+          </div>
+          <span class="memo-editor-mode" id="memoEditorMode">纯文本</span>
+        </div>
+
+        <form class="memo-form" id="memoForm" autocomplete="off">
+          <label class="memo-field">
+            <span>名称</span>
+            <input type="text" id="memoName" maxlength="80" placeholder="例如：蓝桥杯备赛、React 官方文档" required>
+          </label>
+
+          <div class="memo-toggle-row">
+            <div class="memo-toggle-copy">
+              <strong>直连网址</strong>
+              <small>开启后保存为可打开的 URL；关闭后改为纯文本描述。</small>
+            </div>
+            <label class="memo-switch">
+              <input type="checkbox" id="memoLinkMode">
+              <span class="memo-switch-track" aria-hidden="true"><i></i></span>
+              <span class="sr-only">直连网址</span>
+            </label>
+          </div>
+
+          <label class="memo-field" id="memoUrlField" hidden>
+            <span>网址</span>
+            <div class="memo-url-row">
+              <input type="text" id="memoUrl" placeholder="https://example.com" inputmode="url">
+              <a class="memo-open-link" id="memoOpenLink" href="#" target="_blank" rel="noopener noreferrer" hidden>打开</a>
+            </div>
+          </label>
+
+          <label class="memo-field" id="memoDescriptionField">
+            <span>描述</span>
+            <textarea id="memoDescription" rows="5" maxlength="2000" placeholder="记录长期目标、备赛计划或备忘内容…"></textarea>
+          </label>
+
+          <div class="memo-weight-field">
+            <div class="memo-weight-copy">
+              <span>权重</span>
+              <small>1—10 的整数，越高越常出现</small>
+            </div>
+            <div class="memo-weight-controls">
+              <input type="range" id="memoWeightRange" min="1" max="10" step="1" value="5" aria-label="备忘权重">
+              <input type="number" id="memoWeightNumber" min="1" max="10" step="1" value="5" aria-label="权重数值">
+            </div>
+          </div>
+
+          <p class="form-error" id="memoError" hidden></p>
+          <p class="memo-form-hint">滚动提示会按权重随机出现；权重越高，显示次数越多。</p>
+
+          <div class="memo-editor-actions">
+            <button class="btn btn-ghost memo-delete" id="memoDelete" type="button">
+              <svg class="icon"><use href="#i-trash"></use></svg>
+              删除
+            </button>
+            <button class="btn btn-accent" id="memoSave" type="submit">
+              <svg class="icon"><use href="#i-check"></use></svg>
+              保存备忘
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
