@@ -10,7 +10,6 @@
   const DATE_MAX = '2029-12-31';
   const DEFAULT_ROW_HEIGHT = 70;
   const MIN_ROW_HEIGHT = 38;
-  const MAX_ROW_HEIGHT = 240;
   const WEEKDAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
   const COLOR_PALETTE = [
     '#3f705b',
@@ -248,7 +247,6 @@
   let currentMemoId = null;
   let memoEditingId = null;
   let snapTargets = [];
-  let reusePlan = null;
   let lateReminderTimer = null;
   let todoDate = null;
   let todayPanelOpen = false;
@@ -488,11 +486,9 @@
       seenIds.add(id);
 
       const numericHeight = Number(item.height);
-      const height = clamp(
-        Number.isFinite(numericHeight) && numericHeight > 0 ? Math.round(numericHeight) : DEFAULT_ROW_HEIGHT,
-        MIN_ROW_HEIGHT,
-        MAX_ROW_HEIGHT
-      );
+      const height = Number.isFinite(numericHeight) && numericHeight > 0
+        ? Math.max(MIN_ROW_HEIGHT, Math.round(numericHeight))
+        : DEFAULT_ROW_HEIGHT;
 
       candidates.push({ id, start, end, height });
     }
@@ -878,8 +874,7 @@
       'detailStatus', 'detailCompleteBtn', 'detailToggleHint',
       'blockNoteDialog', 'blockNoteSub', 'blockNoteColorDot', 'blockNoteInput',
       'blockNoteHint', 'blockNoteSave',
-      'reuseLastWeek', 'reuseDialog', 'reuseSourceRange', 'reuseSummaryText',
-      'reuseOnlyUnfinished', 'reusePreview', 'confirmReuse',
+      'reuseLastWeek',
       'lateReminderDialog', 'lateReminderSub', 'lateReminderList',
       'todayButton', 'todayButtonCount', 'todayPanel', 'todayClose',
       'todoPrevDate', 'todoDateInput', 'todoNextDate', 'todoToday',
@@ -918,7 +913,7 @@
     els.reuseLastWeek.disabled = weekStart <= MIN_WEEK_START;
     els.reuseLastWeek.title = weekStart <= MIN_WEEK_START
       ? '已经是最早的一周，没有可复用的上周'
-      : '复用上周的日程，并顺延未完成内容';
+      : '一键复用上周全部安排；已完成项重置，未完成项连同日志顺延';
 
     if (thisWeekStart === weekStart) {
       els.thisWeek.textContent = '本周';
@@ -1013,11 +1008,11 @@
     if (assignment.completed) classes.push('is-completed');
     if (hasNote) classes.push('has-note');
     return `
-      <div class="${classes.join(' ')}" style="${blockColorVariables(block)}" data-scheduled-block="true" data-block-id="${esc(block.id)}" data-source-date="${iso}" data-source-segment="${esc(segment.id)}" title="${esc(block.title)} · ${segment.start}–${segment.end}（拖动可移动，双击查看详情）">
+      <div class="${classes.join(' ')}" style="${blockColorVariables(block)}" data-scheduled-block="true" data-block-id="${esc(block.id)}" data-source-date="${iso}" data-source-segment="${esc(segment.id)}" title="${esc(block.title)} · ${segment.start}–${segment.end}（拖动可移动或交换，双击查看详情）">
         <span class="scheduled-title">${esc(block.title)}</span>
         <span class="scheduled-time">${segment.start}–${segment.end}</span>
         ${assignment.completed ? '<span class="completed-flag" aria-label="已完成">✓</span>' : ''}
-        <button class="block-remove" type="button" data-remove-schedule="true" data-date="${iso}" data-segment-id="${esc(segment.id)}" aria-label="将${esc(block.title)}移入回收站">
+        <button class="block-remove" type="button" data-remove-schedule="true" data-date="${iso}" data-segment-id="${esc(segment.id)}" title="从日程表移除，日程块模板保留" aria-label="从日程表移除${esc(block.title)}，日程块模板保留">
           <svg class="icon"><use href="#i-x"></use></svg>
         </button>
       </div>
@@ -1174,7 +1169,7 @@
       els.trashList.innerHTML = `
         <div class="trash-empty">
           <svg class="icon"><use href="#i-trash"></use></svg>
-          <span>回收站是空的。删除的日程块会先放在这里。</span>
+          <span>回收站是空的。工作台或托盘中删除的日程块会放在这里。</span>
         </div>
       `;
       return;
@@ -1955,39 +1950,20 @@
     return true;
   }
 
-  function trashPlacement(date, segmentId, options = {}) {
+  function removePlacementDirect(date, segmentId, options = {}) {
     const day = state.days[date];
     const assignment = day && day.assignments[segmentId];
     if (!assignment) return false;
     const block = getBlock(assignment.blockId);
-    const snapshot = placementSnapshot(date, segmentId);
-    if (!snapshot) return false;
-
-    pushTrashEntry({
-      id: uid('trash'),
-      type: 'placement',
-      title: block ? block.title : '未命名日程',
-      color: block ? block.color : COLOR_PALETTE[0],
-      description: block ? (block.description || '') : '',
-      blockId: assignment.blockId,
-      placements: [snapshot],
-      deletedAt: Date.now()
-    });
 
     delete day.assignments[segmentId];
     saveState();
     renderAll();
-    renderPalette();
-    renderLibrary();
-    renderTrash();
 
-    const remainingUsage = block ? countBlockUsage(block.id) : 0;
     showToast(
       options.fromDrag
-        ? remainingUsage
-          ? `本次安排已放入回收站；该日程块还有 ${remainingUsage} 项安排，模板继续保留。`
-          : '已放入回收站，可在右侧还原。'
-        : `${block ? `「${block.title}」` : '这项安排'}已移入回收站。`
+        ? `${block ? `「${block.title}」` : '这项安排'}已从日程表移除；日程块模板仍保留在托盘中。`
+        : `${block ? `「${block.title}」` : '这项安排'}已从日程表移除；日程块模板仍保留。`
     );
     return true;
   }
@@ -2080,7 +2056,7 @@
     if (!state.trash.length) return;
     askConfirm({
       title: '清空回收站？',
-      message: '回收站里的日程块和安排将被永久删除，无法再还原。',
+      message: '回收站里的内容将被永久删除，无法再还原。',
       confirmText: '永久清空',
       onConfirm: () => {
         state.trash = [];
@@ -2140,7 +2116,7 @@
     return current ? toISODate(addDays(current, -7)) : null;
   }
 
-  function buildReusePlan(onlyUnfinished) {
+  function buildReusePlan() {
     const prevStart = getPreviousWeekStart();
     if (!prevStart) return null;
 
@@ -2164,8 +2140,6 @@
         total += 1;
         if (assignment.completed) completed += 1;
         else unfinished += 1;
-
-        if (onlyUnfinished && assignment.completed) continue;
         selected.push({ sourceDate: date, segment, assignment, block });
       }
     }
@@ -2224,48 +2198,37 @@
     };
   }
 
-  function updateReuseDialog() {
-    reusePlan = buildReusePlan(els.reuseOnlyUnfinished.checked);
-    if (!reusePlan) return;
-
-    els.reuseSourceRange.textContent = formatRange(reusePlan.prevStart);
-    els.reuseSummaryText.textContent = reusePlan.total
-      ? `上周共 ${reusePlan.total} 项安排，其中 ${reusePlan.unfinished} 项未完成、${reusePlan.completed} 项已完成。`
-      : '上周还没有放置任何日程。';
-
-    const skipped = reusePlan.skippedTime + reusePlan.skippedOccupied + reusePlan.skippedRange;
-    if (!reusePlan.items.length) {
-      if (!reusePlan.total) {
-        els.reusePreview.textContent = '上周没有可复用的日程内容。';
-      } else if (els.reuseOnlyUnfinished.checked && reusePlan.unfinished === 0) {
-        els.reusePreview.textContent = '上周没有未完成日程，可以取消勾选来复用全部内容。';
-      } else {
-        els.reusePreview.textContent = '本周暂时没有可填入的空格，已有安排和时间轴不匹配的项会跳过。';
-      }
-    } else {
-      els.reusePreview.textContent = `本次将带入 ${reusePlan.items.length} 项${skipped ? `，另有 ${skipped} 项因时间或冲突跳过` : ''}。`;
-    }
-
-    els.confirmReuse.disabled = reusePlan.items.length === 0;
-  }
-
-  function openReuseDialog() {
+  function reusePreviousWeek() {
     closeTodayPanel();
     if (state.ui.weekStart <= MIN_WEEK_START) {
       showToast('已经是最早的一周，没有可复用的上周。', 'warning');
       return;
     }
-    els.reuseOnlyUnfinished.checked = false;
-    reusePlan = null;
-    updateReuseDialog();
-    if (!els.reuseDialog.open) els.reuseDialog.showModal();
+
+    const plan = buildReusePlan();
+    if (!plan || !plan.total) {
+      showToast('上周还没有放置任何日程，暂时没有可复用的内容。', 'warning');
+      return;
+    }
+
+    if (!plan.items.length) {
+      const skipped = plan.skippedTime + plan.skippedOccupied + plan.skippedRange;
+      showToast(
+        `上周有 ${plan.total} 项安排，但本周没有可填入的匹配时间格${skipped ? `（${skipped} 项冲突或时间轴不匹配）` : ''}。`,
+        'warning',
+        3800
+      );
+      return;
+    }
+
+    applyReusePlan(plan);
   }
 
-  function applyReusePlan() {
-    if (!reusePlan || !reusePlan.items.length) return;
+  function applyReusePlan(plan) {
+    if (!plan || !plan.items.length) return;
 
     let applied = 0;
-    for (const item of reusePlan.items) {
+    for (const item of plan.items) {
       const targetDay = ensureDay(item.targetDate);
       const targetSegment = targetDay.segments.find((segment) => segment.id === item.targetSegmentId);
       if (!targetSegment || targetDay.assignments[targetSegment.id]) continue;
@@ -2278,8 +2241,8 @@
       applied += 1;
     }
 
-    const skipped = reusePlan.skippedTime + reusePlan.skippedOccupied + reusePlan.skippedRange;
-    if (els.reuseDialog.open) els.reuseDialog.close();
+    const preSkipped = plan.skippedTime + plan.skippedOccupied + plan.skippedRange;
+    const skipped = preSkipped + (plan.items.length - applied);
     saveState();
     renderAll();
 
@@ -2290,8 +2253,8 @@
 
     showToast(
       skipped
-        ? `已复用 ${applied} 项日程，${skipped} 项因时间轴或冲突跳过。`
-        : `已复用 ${applied} 项日程，未完成内容已顺延到本周。`
+        ? `已一键复用 ${applied} 项日程，${skipped} 项因时间轴或冲突跳过。`
+        : `已一键复用 ${applied} 项日程，未完成内容已顺延到本周。`
     );
   }
 
@@ -2390,7 +2353,7 @@
   function removeScheduledBlock(date, segmentId) {
     const assignment = getAssignment(date, segmentId);
     if (!assignment) return;
-    trashPlacement(date, segmentId);
+    removePlacementDirect(date, segmentId);
   }
 
   function handleBoardClick(event) {
@@ -2509,21 +2472,20 @@
     if (!resizeState) return;
     event.preventDefault();
 
-    const rawHeight = clamp(
-      Math.round(resizeState.startHeight + event.clientY - resizeState.startY),
+    const rawHeight = Math.max(
       MIN_ROW_HEIGHT,
-      MAX_ROW_HEIGHT
+      Math.round(resizeState.startHeight + event.clientY - resizeState.startY)
     );
     const candidateBottom = resizeState.rowTop + rawHeight;
     let snap = findSnapTarget(candidateBottom);
     if (snap) {
       const snapHeight = snap.bottom - resizeState.rowTop;
-      if (snapHeight < MIN_ROW_HEIGHT - 1 || snapHeight > MAX_ROW_HEIGHT + 1) snap = null;
+      if (snapHeight < MIN_ROW_HEIGHT - 1) snap = null;
     }
     let nextHeight = rawHeight;
 
     if (snap) {
-      nextHeight = clamp(Math.round(snap.bottom - resizeState.rowTop), MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+      nextHeight = Math.max(MIN_ROW_HEIGHT, Math.round(snap.bottom - resizeState.rowTop));
       resizeState.row.classList.add('is-snap-aligned');
       showAlignGuide(snap.bottom, snap.count, snap.label);
 
@@ -2572,7 +2534,7 @@
     if (!resizeState) return;
     const segment = resizeState.segment;
     if (segment) {
-      segment.height = clamp(resizeState.lastHeight, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT);
+      segment.height = Math.max(MIN_ROW_HEIGHT, resizeState.lastHeight);
     }
     document.body.classList.remove('is-resizing');
     els.resizeTip.hidden = true;
@@ -2798,18 +2760,39 @@
     window.addEventListener('pointercancel', cancelDrag);
   }
 
+  function updateDragTrashCopy(sourceType) {
+    const title = els.dragTrash.querySelector('strong');
+    const note = els.dragTrash.querySelector('small');
+    if (!title || !note) return;
+    if (sourceType === 'scheduled') {
+      title.textContent = '从日程表删除';
+      note.textContent = '松手移除安排，日程块保留';
+    } else {
+      title.textContent = '移入回收站';
+      note.textContent = '松手删除日程块';
+    }
+  }
+
+  function defaultDragHint() {
+    if (!dragState) return '拖入时间格';
+    return dragState.sourceType === 'scheduled'
+      ? '拖到空白格，或与另一个日程交换'
+      : '拖入空白格，或替换已有日程';
+  }
+
   function startDragVisual(event) {
     if (!dragState) return;
     dragState.started = true;
     document.body.classList.add('is-dragging');
     dragState.originEl.classList.add(dragState.sourceType === 'palette' ? 'is-drag-source' : 'is-being-dragged');
+    updateDragTrashCopy(dragState.sourceType);
 
     els.dragGhost.style.setProperty('--block-color', normalizeHex(dragState.block.color) || COLOR_PALETTE[0]);
     els.dragGhost.innerHTML = `
       <span class="drag-ghost-dot" aria-hidden="true"></span>
       <span class="drag-ghost-copy">
         <strong>${esc(dragState.block.title)}</strong>
-        <span>放入空白时间格</span>
+        <span>${esc(defaultDragHint())}</span>
       </span>
     `;
     els.dragGhost.classList.add('is-visible');
@@ -2830,7 +2813,7 @@
 
   function clearDropTarget() {
     if (!dragState || !dragState.currentSlot) return;
-    dragState.currentSlot.classList.remove('is-drop-target', 'is-invalid');
+    dragState.currentSlot.classList.remove('is-drop-target', 'is-invalid', 'is-swap-target', 'is-replace-target');
     dragState.currentSlot = null;
     dragState.currentValid = false;
   }
@@ -2843,26 +2826,46 @@
 
   function updateDropTarget(slot) {
     if (!dragState) return;
-    if (dragState.currentSlot === slot) {
-      if (!slot) setDragHint('放入空白时间格');
-      return;
-    }
-    clearDropTarget();
     if (!slot) {
-      setDragHint('放入空白时间格');
+      clearDropTarget();
+      setDragHint(defaultDragHint());
       return;
     }
+    if (dragState.currentSlot === slot) return;
+
+    clearDropTarget();
 
     const sameSource = dragState.sourceType === 'scheduled'
       && slot.dataset.date === dragState.sourceDate
       && slot.dataset.segmentId === dragState.sourceSegment;
     const occupied = slot.classList.contains('has-block');
-    const valid = !occupied || sameSource;
 
     dragState.currentSlot = slot;
-    dragState.currentValid = valid;
-    slot.classList.add(valid ? 'is-drop-target' : 'is-invalid');
-    setDragHint(valid ? '放入这个时间格' : '这个格子已被占用');
+
+    if (sameSource) {
+      dragState.currentValid = false;
+      setDragHint('这个日程已经在这里');
+      return;
+    }
+
+    if (!occupied) {
+      dragState.currentValid = true;
+      slot.classList.add('is-drop-target');
+      setDragHint('放入这个时间格');
+      return;
+    }
+
+    const existingTitle = slot.querySelector('.scheduled-title');
+    const targetTitle = existingTitle ? existingTitle.textContent.trim() : '已有日程';
+    dragState.currentValid = true;
+
+    if (dragState.sourceType === 'scheduled') {
+      slot.classList.add('is-swap-target');
+      setDragHint(`松开与「${targetTitle}」交换`);
+    } else {
+      slot.classList.add('is-replace-target');
+      setDragHint(`松开更换为「${dragState.block.title}」`);
+    }
   }
 
   function updateTrashTarget(target) {
@@ -2872,7 +2875,11 @@
     clearTrashTarget();
     dragState.currentTrash = target;
     target.classList.add('is-trash-hover');
-    setDragHint('松手移入回收站');
+    setDragHint(
+      dragState.sourceType === 'scheduled'
+        ? '松手从日程表删除，日程块模板保留'
+        : '松手删除这个日程块'
+    );
   }
 
   function handleDragMove(event) {
@@ -2924,6 +2931,68 @@
     }
   }
 
+  function swapScheduledAssignments(sourceDate, sourceSegment, targetDate, targetSegment) {
+    const sourceDay = state.days[sourceDate];
+    const targetDay = state.days[targetDate];
+    const sourceAssignment = sourceDay && sourceDay.assignments[sourceSegment];
+    const targetAssignment = targetDay && targetDay.assignments[targetSegment];
+    if (!sourceAssignment || !targetAssignment) return false;
+
+    const sourceBlock = getBlock(sourceAssignment.blockId);
+    const targetBlock = getBlock(targetAssignment.blockId);
+    if (!sourceBlock || !targetBlock) return false;
+
+    const sourceSnapshot = { ...sourceAssignment };
+    const targetSnapshot = { ...targetAssignment };
+
+    targetDay.assignments[targetSegment] = makeAssignment(sourceSnapshot.blockId, sourceSnapshot);
+    sourceDay.assignments[sourceSegment] = makeAssignment(targetSnapshot.blockId, targetSnapshot);
+
+    saveState();
+    renderAll();
+    showToast(`已交换「${sourceBlock.title}」和「${targetBlock.title}」。`);
+    return true;
+  }
+
+  function confirmPaletteReplacement(blockId, targetDate, targetSegmentId) {
+    const block = getBlock(blockId);
+    const targetAssignment = getAssignment(targetDate, targetSegmentId);
+    if (!block || !targetAssignment) return;
+
+    if (targetAssignment.blockId === block.id) {
+      showToast(`这个时间格已经是「${block.title}」。`);
+      return;
+    }
+
+    const oldBlock = getBlock(targetAssignment.blockId);
+    const oldTitle = oldBlock ? oldBlock.title : '已有日程';
+
+    askConfirm({
+      title: `更换「${oldTitle}」？`,
+      message: `将用「${block.title}」替换这个时间格。原安排及其日志会从日程表移除，「${oldTitle}」日程块模板仍保留在托盘中。`,
+      confirmText: '确认更换',
+      onConfirm: () => {
+        const day = state.days[targetDate];
+        const liveAssignment = day && day.assignments[targetSegmentId];
+        if (!liveAssignment) {
+          showToast('这个时间格已经发生变化，请重新拖动。', 'warning');
+          return;
+        }
+        if (liveAssignment.blockId === block.id) {
+          showToast(`这个时间格已经是「${block.title}」。`);
+          return;
+        }
+
+        day.assignments[targetSegmentId] = makeAssignment(block.id, {
+          note: block.description || ''
+        });
+        saveState();
+        renderAll();
+        showToast(`已将「${oldTitle}」更换为「${block.title}」。`);
+      }
+    });
+  }
+
   function handleDragEnd(event) {
     if (!dragState) return;
 
@@ -2944,18 +3013,11 @@
     const trashTarget = element && element.closest ? element.closest('[data-recycle-drop]') : null;
 
     if (trashTarget) {
-      const isLastPlacement = countBlockUsage(block.id) <= 1;
       cleanupDrag();
       if (sourceType === 'palette') {
         trashBlockDefinition(block.id, { fromDrag: true });
       } else if (sourceDate && sourceSegment) {
-        if (isLastPlacement) {
-          // Dragging the final placed occurrence into the bin removes the card as well,
-          // so the tray and the lower-left library do not keep a stale copy around.
-          trashBlockDefinition(block.id, { fromDrag: true });
-        } else {
-          trashPlacement(sourceDate, sourceSegment, { fromDrag: true });
-        }
+        removePlacementDirect(sourceDate, sourceSegment, { fromDrag: true });
       }
       return;
     }
@@ -2981,9 +3043,13 @@
 
     if (occupied) {
       cleanupDrag();
-      slot.classList.add('is-rejecting');
-      window.setTimeout(() => slot.classList.remove('is-rejecting'), 420);
-      showToast('这个时间格已经有安排了，请换一个空白格。', 'warning');
+      if (sourceType === 'scheduled') {
+        if (sourceDate && sourceSegment) {
+          swapScheduledAssignments(sourceDate, sourceSegment, targetDate, targetSegment);
+        }
+        return;
+      }
+      confirmPaletteReplacement(block.id, targetDate, targetSegment);
       return;
     }
 
@@ -3027,7 +3093,7 @@
   function cleanupDrag() {
     if (!dragState) return;
     if (dragState.currentSlot) {
-      dragState.currentSlot.classList.remove('is-drop-target', 'is-invalid');
+      dragState.currentSlot.classList.remove('is-drop-target', 'is-invalid', 'is-swap-target', 'is-replace-target');
     }
     if (dragState.currentTrash) {
       dragState.currentTrash.classList.remove('is-trash-hover');
@@ -3312,7 +3378,7 @@
         id: segment.id,
         start,
         end,
-        height: clamp(Number(segment.height) || DEFAULT_ROW_HEIGHT, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT)
+        height: Math.max(MIN_ROW_HEIGHT, Number(segment.height) || DEFAULT_ROW_HEIGHT)
       });
     }
 
@@ -3397,7 +3463,7 @@
       id: segment.id,
       start: segment.start,
       end: segment.end,
-      height: clamp(Number(segment.height) || DEFAULT_ROW_HEIGHT, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT)
+      height: Math.max(MIN_ROW_HEIGHT, Number(segment.height) || DEFAULT_ROW_HEIGHT)
     }));
     const nextIds = new Set(nextSegments.map((segment) => segment.id));
     const nextAssignments = {};
@@ -3681,9 +3747,7 @@
       if (remove) deleteCustomTodo(remove.dataset.date, remove.dataset.todoId);
     });
 
-    els.reuseLastWeek.addEventListener('click', openReuseDialog);
-    els.reuseOnlyUnfinished.addEventListener('change', updateReuseDialog);
-    els.confirmReuse.addEventListener('click', applyReusePlan);
+    els.reuseLastWeek.addEventListener('click', reusePreviousWeek);
 
     els.lateReminderList.addEventListener('click', (event) => {
       const item = event.target.closest('[data-late-kind]');
@@ -3830,10 +3894,6 @@
         renderBoard();
         renderPalette();
       }
-    });
-
-    els.reuseDialog.addEventListener('close', () => {
-      reusePlan = null;
     });
 
     els.memoTicker.addEventListener('click', openMemoManager);

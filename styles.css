@@ -1756,6 +1756,39 @@ svg {
   transform: translate(-50%, -50%);
 }
 
+.slot.is-swap-target,
+.slot.is-replace-target {
+  background: rgba(181, 131, 61, 0.09);
+  box-shadow: inset 0 0 0 2px #b5833d;
+}
+
+.slot.is-swap-target .scheduled-block,
+.slot.is-replace-target .scheduled-block {
+  outline: 2px solid rgba(181, 131, 61, 0.9);
+  outline-offset: -3px;
+}
+
+.slot.is-swap-target::after,
+.slot.is-replace-target::after {
+  content: "交换";
+  display: block;
+  width: auto;
+  height: auto;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 999px;
+  color: #7d5624;
+  background: rgba(255, 251, 244, 0.92);
+  font-size: 8.5px;
+  font-weight: 700;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.slot.is-replace-target::after {
+  content: "替换";
+}
+
 .slot.is-invalid {
   background: rgba(173, 81, 71, 0.08);
   box-shadow: inset 0 0 0 1px rgba(173, 81, 71, 0.4);
@@ -1774,12 +1807,6 @@ svg {
   font-weight: 700;
   opacity: 1;
   transform: translate(-50%, -50%);
-}
-
-.slot.is-rejecting {
-  background: rgba(173, 81, 71, 0.11);
-  box-shadow: inset 0 0 0 2px rgba(173, 81, 71, 0.5);
-  animation: rejectShake 0.38s ease both;
 }
 
 .slot:focus-visible {
@@ -4062,120 +4089,6 @@ body.is-dragging * {
   text-align: center;
 }
 
-.reuse-dialog {
-  width: min(510px, calc(100vw - 28px));
-}
-
-.reuse-body {
-  padding: 2px 24px 17px;
-}
-
-.reuse-summary {
-  padding: 12px 13px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface-soft);
-}
-
-.reuse-summary-top {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 4px;
-}
-
-.reuse-summary-top span {
-  color: var(--muted);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.reuse-summary-top strong {
-  color: var(--ink-soft);
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.reuse-summary p {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 10px;
-  line-height: 1.6;
-}
-
-.reuse-option {
-  display: flex;
-  align-items: flex-start;
-  gap: 9px;
-  margin-top: 10px;
-  padding: 11px 12px;
-  border: 1px solid var(--line);
-  border-radius: 11px;
-  background: var(--surface-strong);
-  cursor: pointer;
-}
-
-.reuse-option input {
-  width: 15px;
-  height: 15px;
-  flex: 0 0 auto;
-  margin: 2px 0 0;
-  accent-color: var(--accent);
-}
-
-.reuse-option-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.reuse-option-copy strong {
-  color: var(--ink);
-  font-size: 10px;
-  font-weight: 650;
-}
-
-.reuse-option-copy small {
-  color: var(--muted);
-  font-size: 8px;
-  line-height: 1.5;
-}
-
-.reuse-preview {
-  margin: 10px 0 0;
-  padding: 8px 10px;
-  border-radius: 9px;
-  color: var(--accent-dark);
-  background: var(--accent-wash);
-  font-size: 9px;
-  font-weight: 650;
-  line-height: 1.5;
-}
-
-.reuse-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 5px;
-  margin: 9px 0 0;
-  color: var(--muted);
-  font-size: 8px;
-  line-height: 1.5;
-}
-
-.reuse-note .icon {
-  width: 11px;
-  height: 11px;
-  margin-top: 1px;
-  flex: 0 0 auto;
-}
-
-.reuse-dialog .dialog-footer {
-  justify-content: flex-end;
-  gap: 8px;
-}
-
 /* --------------------------------------------------------------------------
    Long-term memo manager
    -------------------------------------------------------------------------- */
@@ -5073,14 +4986,6 @@ body.is-dragging * {
   }
 }
 
-@keyframes rejectShake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-3px); }
-  40% { transform: translateX(3px); }
-  60% { transform: translateX(-2px); }
-  80% { transform: translateX(2px); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -5639,11 +5544,6 @@ body.is-dragging * {
   .memo-weight-controls input[type="range"] {
     flex: 1;
     width: auto;
-  }
-
-  .reuse-body {
-    padding-right: 18px;
-    padding-left: 18px;
   }
 
   .late-reminder-head {

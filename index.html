@@ -176,7 +176,7 @@
             <div class="heading-line">
               <h1>贵在坚持，始于计划</h1>
               <span class="outline-pill" id="weekPill">7 天独立时间轴</span>
-              <button class="reuse-week-btn" id="reuseLastWeek" type="button" title="复用上周的日程，并顺延未完成内容">
+              <button class="reuse-week-btn" id="reuseLastWeek" type="button" title="一键复用上周全部安排；已完成项重置，未完成项连同日志顺延">
                 <svg class="icon"><use href="#i-copy"></use></svg>
                 复用上周
               </button>
@@ -196,7 +196,7 @@
           <div class="board-caption">
             <span><span class="caption-mark resize-mark" aria-hidden="true"></span>拖动行底边调整格子高度，靠近其他日期的底边会顿挫对齐</span>
             <span><span class="caption-mark clock-mark" aria-hidden="true"></span>每日右上角可单独编辑时间轴</span>
-            <span class="caption-hint"><svg class="icon"><use href="#i-info"></use></svg>双击日程可查看详情与完成状态</span>
+            <span class="caption-hint"><svg class="icon"><use href="#i-info"></use></svg>双击查看详情；拖动日程到另一日程可交换</span>
           </div>
         </section>
 
@@ -258,11 +258,11 @@
             </div>
             <span class="count-badge" id="paletteCount">0</span>
           </div>
-          <p class="panel-desc">按住卡片，拖入任意空白时间格。</p>
+          <p class="panel-desc">按住卡片拖入空白格；拖到已有日程上可确认替换。</p>
           <div class="palette-list" id="paletteList"></div>
           <div class="palette-footer">
             <span class="snap-icon" aria-hidden="true"></span>
-            拖入后自动贴合格子边界
+            拖入空白格自动贴合；拖到日程上可替换
           </div>
         </section>
 
@@ -274,7 +274,7 @@
             </div>
             <span class="count-badge" id="trashCount">0</span>
           </div>
-          <p class="panel-desc">删除的日程块会先来到这里。把右侧卡片拖进回收站，也可以回收。</p>
+          <p class="panel-desc">只有工作台或托盘中删除的日程块会进入这里；表格里的安排拖进来会直接移除，模板保留。</p>
           <div class="trash-list" id="trashList"></div>
           <div class="trash-footer">
             <span><svg class="icon"><use href="#i-undo"></use></svg>支持还原</span>
@@ -289,7 +289,7 @@
           </div>
           <ol class="guide-list">
             <li><span>01</span><p>在左下角定义日程块，取一个名字、选一种颜色。</p></li>
-            <li><span>02</span><p>从右侧托盘拖入空白格；双击已放置的日程，可以写详情和标记完成。</p></li>
+            <li><span>02</span><p>从右侧托盘拖入空白格；拖到已有日程上可替换，拖到另一日程上可交换。</p></li>
             <li><span>03</span><p>拖动行底边调整高度，靠近其他日期的同一底边会自动对齐。</p></li>
           </ol>
           <p class="guide-note"><svg class="icon"><use href="#i-info"></use></svg>日程按日期保存；删除的内容可在回收站还原。</p>
@@ -434,44 +434,6 @@
     <div class="confirm-actions">
       <button class="btn btn-ghost" id="confirmCancel" type="button">取消</button>
       <button class="btn btn-danger" id="confirmOk" type="button">确定</button>
-    </div>
-  </dialog>
-
-  <dialog class="dialog reuse-dialog" id="reuseDialog" aria-labelledby="reuseTitle">
-    <div class="dialog-head">
-      <div>
-        <p class="eyebrow">WEEKLY CARRY-OVER</p>
-        <h2 id="reuseTitle">复用上周内容</h2>
-        <p class="dialog-sub">把上周的安排带进这一周，只填入空白时间格，不会覆盖已有日程。</p>
-      </div>
-      <button class="icon-btn dialog-close" type="button" data-close-dialog="reuseDialog" aria-label="关闭复用上周">
-        <svg class="icon"><use href="#i-x"></use></svg>
-      </button>
-    </div>
-    <div class="reuse-body">
-      <div class="reuse-summary">
-        <div class="reuse-summary-top">
-          <span>上周</span>
-          <strong id="reuseSourceRange">—</strong>
-        </div>
-        <p id="reuseSummaryText">正在读取上周安排…</p>
-      </div>
-      <label class="reuse-option" for="reuseOnlyUnfinished">
-        <input type="checkbox" id="reuseOnlyUnfinished">
-        <span class="reuse-option-copy">
-          <strong>仅顺延未完成日程</strong>
-          <small>不勾选时复用上周全部内容；已完成的日程会重置为新待办，未完成日程连同日志一起顺延。</small>
-        </span>
-      </label>
-      <p class="reuse-preview" id="reusePreview">—</p>
-      <p class="reuse-note"><svg class="icon"><use href="#i-info"></use></svg>时间轴不一致或目标时间格已被占用时，那一条会自动跳过。</p>
-    </div>
-    <div class="dialog-footer">
-      <button class="btn btn-ghost" type="button" data-close-dialog="reuseDialog">取消</button>
-      <button class="btn btn-accent" id="confirmReuse" type="button">
-        <svg class="icon"><use href="#i-copy"></use></svg>
-        复用并顺延
-      </button>
     </div>
   </dialog>
 
