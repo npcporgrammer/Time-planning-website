@@ -650,7 +650,7 @@
           <div class="memo-toggle-row">
             <div class="memo-toggle-copy">
               <strong>直连网址</strong>
-              <small>开启后保存为可打开的 URL；关闭后改为纯文本描述。</small>
+              <small>开启后可添加多个网址；每个网址可单独写说明，纯文本描述也始终保留。</small>
             </div>
             <label class="memo-switch">
               <input type="checkbox" id="memoLinkMode">
@@ -659,17 +659,20 @@
             </label>
           </div>
 
-          <label class="memo-field" id="memoUrlField" hidden>
-            <span>网址</span>
-            <div class="memo-url-row">
-              <input type="text" id="memoUrl" placeholder="https://example.com" inputmode="url">
-              <a class="memo-open-link" id="memoOpenLink" href="#" target="_blank" rel="noopener noreferrer" hidden>打开</a>
+          <div class="memo-field" id="memoUrlField" hidden>
+            <div class="memo-url-head">
+              <span>直连网址</span>
+              <button class="memo-add-url" id="memoAddUrl" type="button">
+                <svg class="icon"><use href="#i-plus"></use></svg>
+                添加网址
+              </button>
             </div>
-          </label>
+            <div class="memo-url-list" id="memoUrlList"></div>
+          </div>
 
           <label class="memo-field" id="memoDescriptionField">
             <span>描述</span>
-            <textarea id="memoDescription" rows="5" maxlength="2000" placeholder="记录长期目标、备赛计划或备忘内容…"></textarea>
+            <textarea id="memoDescription" rows="4" maxlength="2000" placeholder="记录长期目标、备赛计划或备忘内容…"></textarea>
           </label>
 
           <div class="memo-weight-field">
@@ -685,18 +688,18 @@
 
           <p class="form-error" id="memoError" hidden></p>
           <p class="memo-form-hint">滚动提示会按权重随机出现；权重越高，显示次数越多。</p>
-
-          <div class="memo-editor-actions">
-            <button class="btn btn-ghost memo-delete" id="memoDelete" type="button">
-              <svg class="icon"><use href="#i-trash"></use></svg>
-              删除
-            </button>
-            <button class="btn btn-accent" id="memoSave" type="submit">
-              <svg class="icon"><use href="#i-check"></use></svg>
-              保存备忘
-            </button>
-          </div>
         </form>
+
+        <div class="memo-editor-actions">
+          <button class="btn btn-ghost memo-delete" id="memoDelete" type="button">
+            <svg class="icon"><use href="#i-trash"></use></svg>
+            删除
+          </button>
+          <button class="btn btn-accent" id="memoSave" type="submit" form="memoForm">
+            <svg class="icon"><use href="#i-check"></use></svg>
+            保存备忘
+          </button>
+        </div>
       </section>
     </div>
   </dialog>

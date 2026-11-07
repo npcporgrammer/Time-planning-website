@@ -447,8 +447,22 @@
         1,
         10
       );
-      const url = normalizeHttpUrl(item.url);
-      const linkMode = Boolean(item.linkMode) && Boolean(url);
+      const rawUrls = Array.isArray(item.urls) ? item.urls : (item.url ? [item.url] : []);
+      const urls = [];
+      for (const rawItem of rawUrls) {
+        if (urls.length >= 10) break;
+        const rawUrl = typeof rawItem === 'string'
+          ? rawItem
+          : (rawItem && typeof rawItem === 'object' ? rawItem.url : '');
+        const url = normalizeHttpUrl(rawUrl);
+        if (!url || urls.some((entry) => entry.url === url)) continue;
+        const linkDescription = rawItem && typeof rawItem === 'object' && typeof rawItem.description === 'string'
+          ? rawItem.description.trim().slice(0, 300)
+          : '';
+        urls.push({ url, description: linkDescription });
+      }
+
+      const linkMode = Boolean(item.linkMode) && urls.length > 0;
       const description = typeof item.description === 'string' ? item.description.slice(0, 2000) : '';
       const createdAt = Number(item.createdAt);
       const updatedAt = Number(item.updatedAt);
@@ -458,7 +472,7 @@
         title,
         weight,
         linkMode,
-        url,
+        urls,
         description,
         createdAt: Number.isFinite(createdAt) ? createdAt : Date.now(),
         updatedAt: Number.isFinite(updatedAt) ? updatedAt : Date.now()
@@ -885,7 +899,7 @@
       'memoTicker', 'memoTickerLineA', 'memoTickerLineB', 'memoTickerCount',
       'memoDialog', 'memoCount', 'memoList', 'memoNew', 'memoForm',
       'memoEditorTitle', 'memoEditorMode', 'memoName', 'memoLinkMode',
-      'memoUrlField', 'memoUrl', 'memoOpenLink', 'memoDescriptionField',
+      'memoUrlField', 'memoAddUrl', 'memoUrlList', 'memoDescriptionField',
       'memoDescription', 'memoWeightRange', 'memoWeightNumber', 'memoError',
       'memoDelete', 'memoSave'
     ];
@@ -1465,12 +1479,18 @@
   }
 
   function memoLineHtml(memo) {
-    const kind = memo.linkMode ? '网址' : '备忘';
+    const kind = memo.linkMode
+      ? (memo.urls.length > 1 ? `网址 ${memo.urls.length}` : '网址')
+      : '备忘';
     let note = '';
-    if (memo.linkMode) {
-      note = memoHost(memo.url);
-    } else if (memo.description && memo.description.trim()) {
+
+    if (memo.description && memo.description.trim()) {
       note = memo.description.replace(/\s+/g, ' ').trim().slice(0, 56);
+    } else if (memo.urls.find((entry) => entry.description)) {
+      note = memo.urls.find((entry) => entry.description).description.replace(/\s+/g, ' ').trim().slice(0, 56);
+    } else if (memo.linkMode && memo.urls.length) {
+      const host = memoHost(memo.urls[0].url);
+      note = memo.urls.length > 1 ? `${host} +${memo.urls.length - 1}` : host;
     }
 
     return `
@@ -1604,8 +1624,12 @@
 
     els.memoList.innerHTML = memos.map((memo) => {
       const weightClass = memo.weight >= 10 ? ' is-top' : memo.weight >= 8 ? ' is-hot' : '';
+      const hasDescription = Boolean(
+        (memo.description && memo.description.trim())
+        || memo.urls.some((entry) => entry.description)
+      );
       const meta = memo.linkMode
-        ? (memoHost(memo.url) || '网址备忘')
+        ? `${memo.urls.length} 个网址${hasDescription ? ' · 有描述' : ''}`
         : ((memo.description || '').replace(/\s+/g, ' ').trim().slice(0, 48) || '纯文本备忘');
       return `
         <button class="memo-list-item ${memo.id === memoEditingId ? 'is-active' : ''}" type="button" data-memo-id="${esc(memo.id)}">
@@ -1620,23 +1644,108 @@
     }).join('');
   }
 
-  function updateMemoOpenLink() {
-    const url = normalizeHttpUrl(els.memoUrl.value);
+  function updateMemoUrlRowLink(row) {
+    if (!row) return;
+    const input = row.querySelector('.memo-url-input');
+    const link = row.querySelector('.memo-open-link');
+    if (!input || !link) return;
+
+    const url = normalizeHttpUrl(input.value);
     if (url) {
-      els.memoOpenLink.href = url;
-      els.memoOpenLink.hidden = false;
+      link.href = url;
+      link.hidden = false;
     } else {
-      els.memoOpenLink.hidden = true;
-      els.memoOpenLink.href = '#';
+      link.hidden = true;
+      link.href = '#';
     }
+  }
+
+  function updateMemoAddUrlState() {
+    if (!els.memoAddUrl) return;
+    const count = els.memoUrlList.querySelectorAll('[data-memo-url-row]').length;
+    els.memoAddUrl.disabled = count >= 10;
+    els.memoAddUrl.title = count >= 10 ? '最多添加 10 个直连网址' : '添加一个直连网址';
+  }
+
+  function addMemoUrlRow(link = {}) {
+    const count = els.memoUrlList.querySelectorAll('[data-memo-url-row]').length;
+    if (count >= 10) {
+      showMemoError('最多添加 10 个直连网址。');
+      return null;
+    }
+
+    const value = typeof link === 'string' ? link : (link.url || '');
+    const descriptionValue = link && typeof link === 'object' ? (link.description || '') : '';
+
+    const item = document.createElement('div');
+    item.className = 'memo-url-item';
+    item.dataset.memoUrlRow = 'true';
+    item.innerHTML = `
+      <div class="memo-url-row">
+        <input type="text" class="memo-url-input" maxlength="2000" placeholder="https://example.com" inputmode="url" aria-label="直连网址">
+        <a class="memo-open-link" href="#" target="_blank" rel="noopener noreferrer" hidden>打开</a>
+        <button class="memo-url-remove" type="button" data-remove-memo-url aria-label="删除这个网址" title="删除这个网址">
+          <svg class="icon"><use href="#i-x"></use></svg>
+        </button>
+      </div>
+      <input type="text" class="memo-url-description" maxlength="300" placeholder="这个网址是做什么的…" aria-label="网址描述">
+    `;
+    item.querySelector('.memo-url-input').value = value;
+    item.querySelector('.memo-url-description').value = descriptionValue;
+    els.memoUrlList.appendChild(item);
+    updateMemoUrlRowLink(item);
+    updateMemoAddUrlState();
+    return item;
+  }
+
+  function renderMemoUrlRows(urls = []) {
+    els.memoUrlList.innerHTML = '';
+    const values = urls.length ? urls : [{}];
+    values.slice(0, 10).forEach((link) => addMemoUrlRow(link));
+    updateMemoAddUrlState();
+  }
+
+  function collectMemoUrls() {
+    const items = [...els.memoUrlList.querySelectorAll('[data-memo-url-row]')];
+    const urls = [];
+    let invalidInput = null;
+
+    for (const item of items) {
+      const input = item.querySelector('.memo-url-input');
+      if (!input) continue;
+      const text = input.value.trim();
+      if (!text) continue;
+      const url = normalizeHttpUrl(text);
+      if (!url) {
+        if (!invalidInput) invalidInput = input;
+        continue;
+      }
+      const description = item.querySelector('.memo-url-description');
+      const linkDescription = description ? description.value.trim().slice(0, 300) : '';
+      const existing = urls.find((entry) => entry.url === url);
+      if (existing) {
+        if (!existing.description && linkDescription) existing.description = linkDescription;
+        continue;
+      }
+      urls.push({ url, description: linkDescription });
+      if (urls.length >= 10) break;
+    }
+
+    return { urls, invalidInput };
   }
 
   function updateMemoEditorMode() {
     const linkMode = els.memoLinkMode.checked;
     els.memoUrlField.hidden = !linkMode;
-    els.memoDescriptionField.hidden = linkMode;
-    els.memoEditorMode.textContent = linkMode ? '网址' : '纯文本';
-    updateMemoOpenLink();
+    els.memoDescriptionField.hidden = false;
+
+    if (linkMode && !els.memoUrlList.querySelector('[data-memo-url-row]')) {
+      addMemoUrlRow('');
+    }
+
+    els.memoEditorMode.textContent = linkMode ? '网址 + 文本' : '纯文本';
+    els.memoUrlList.querySelectorAll('[data-memo-url-row]').forEach(updateMemoUrlRowLink);
+    updateMemoAddUrlState();
   }
 
   function syncMemoWeight(value) {
@@ -1661,7 +1770,7 @@
     memoEditingId = memo.id;
     els.memoName.value = memo.title;
     els.memoLinkMode.checked = Boolean(memo.linkMode);
-    els.memoUrl.value = memo.url || '';
+    renderMemoUrlRows(memo.urls || []);
     els.memoDescription.value = memo.description || '';
     els.memoWeightRange.value = String(memo.weight);
     els.memoWeightNumber.value = String(memo.weight);
@@ -1676,7 +1785,7 @@
     memoEditingId = null;
     els.memoForm.reset();
     els.memoName.value = '';
-    els.memoUrl.value = '';
+    renderMemoUrlRows([]);
     els.memoDescription.value = '';
     els.memoLinkMode.checked = false;
     syncMemoWeight(5);
@@ -1717,24 +1826,32 @@
     }
 
     const linkMode = els.memoLinkMode.checked;
-    const url = normalizeHttpUrl(els.memoUrl.value);
-    if (linkMode && !url) {
-      showMemoError('开启直连网址后，请填写有效的 http/https 地址。');
-      els.memoUrl.focus();
+    const { urls, invalidInput } = collectMemoUrls();
+
+    if (linkMode && invalidInput) {
+      showMemoError('有网址格式不正确，请填写有效的 http/https 地址。');
+      invalidInput.focus();
+      return;
+    }
+    if (linkMode && !urls.length) {
+      showMemoError('开启直连网址后，请至少填写一个有效网址。');
+      const firstInput = els.memoUrlList.querySelector('.memo-url-input');
+      if (firstInput) firstInput.focus();
       return;
     }
 
     const numericWeight = Number(els.memoWeightNumber.value || els.memoWeightRange.value);
     const weight = clamp(Number.isFinite(numericWeight) ? Math.round(numericWeight) : 5, 1, 10);
     const description = els.memoDescription.value.slice(0, 2000);
+    const effectiveLinkMode = linkMode && urls.length > 0;
     const now = Date.now();
     let memo = memoEditingId ? getMemoById(memoEditingId) : null;
 
     if (memo) {
       memo.title = title.slice(0, 80);
       memo.weight = weight;
-      memo.linkMode = linkMode;
-      memo.url = url;
+      memo.linkMode = effectiveLinkMode;
+      memo.urls = urls;
       memo.description = description;
       memo.updatedAt = now;
     } else {
@@ -1746,8 +1863,8 @@
         id: uid('memo'),
         title: title.slice(0, 80),
         weight,
-        linkMode,
-        url,
+        linkMode: effectiveLinkMode,
+        urls,
         description,
         createdAt: now,
         updatedAt: now
@@ -3923,13 +4040,34 @@
     els.memoForm.addEventListener('submit', handleMemoSubmit);
     els.memoLinkMode.addEventListener('change', () => {
       updateMemoEditorMode();
-      if (els.memoLinkMode.checked) els.memoUrl.focus();
+      if (els.memoLinkMode.checked) {
+        const firstInput = els.memoUrlList.querySelector('.memo-url-input');
+        if (firstInput) firstInput.focus();
+      }
     });
     els.memoName.addEventListener('input', () => {
       els.memoError.hidden = true;
     });
-    els.memoUrl.addEventListener('input', () => {
-      updateMemoOpenLink();
+    els.memoAddUrl.addEventListener('click', () => {
+      const row = addMemoUrlRow('');
+      if (row) {
+        row.querySelector('.memo-url-input').focus();
+        els.memoError.hidden = true;
+      }
+    });
+    els.memoUrlList.addEventListener('input', (event) => {
+      const row = event.target.closest('[data-memo-url-row]');
+      if (!row) return;
+      updateMemoUrlRowLink(row);
+      els.memoError.hidden = true;
+    });
+    els.memoUrlList.addEventListener('click', (event) => {
+      const removeButton = event.target.closest('[data-remove-memo-url]');
+      if (!removeButton) return;
+      const row = removeButton.closest('[data-memo-url-row]');
+      if (row) row.remove();
+      if (!els.memoUrlList.querySelector('[data-memo-url-row]')) addMemoUrlRow('');
+      updateMemoAddUrlState();
       els.memoError.hidden = true;
     });
     els.memoDescription.addEventListener('input', () => {
