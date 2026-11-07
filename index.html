@@ -41,6 +41,35 @@
     <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></symbol>
   </svg>
 
+  <aside class="studio-rail" aria-label="快捷导航">
+    <button class="rail-mark" type="button" data-rail-action="today" aria-label="回到今天" title="回到今天">W</button>
+    <div class="rail-word">WEEKLY<br>STUDIO</div>
+    <div class="rail-week">
+      <span>WEEK</span>
+      <strong id="railWeek">45</strong>
+    </div>
+    <nav class="rail-nav" aria-label="快捷入口">
+      <button type="button" data-rail-action="today" aria-label="回到今天" title="回到今天">
+        <svg class="icon"><use href="#i-list"></use></svg>
+        <span>今日</span>
+      </button>
+      <button type="button" data-rail-action="calendar" aria-label="打开日历" title="打开日历">
+        <svg class="icon"><use href="#i-calendar"></use></svg>
+        <span>日历</span>
+      </button>
+      <button type="button" data-rail-action="memo" aria-label="打开长期备忘" title="打开长期备忘">
+        <svg class="icon"><use href="#i-bookmark"></use></svg>
+        <span>备忘</span>
+      </button>
+      <button type="button" data-rail-action="profile" aria-label="打开个人信息" title="打开个人信息">
+        <svg class="icon"><use href="#i-user"></use></svg>
+        <span>我的</span>
+      </button>
+    </nav>
+    <span class="rail-line" aria-hidden="true"></span>
+    <div class="rail-local">LOCAL<br><span>ONLY</span></div>
+  </aside>
+
   <div class="app-shell">
     <header class="topbar">
       <div class="brand">
@@ -171,6 +200,10 @@
     <main class="workspace">
       <section class="planner-column" aria-label="周计划">
         <div class="planner-heading">
+          <div class="stage-stamp" aria-hidden="true">
+            <span>WEEK</span>
+            <strong id="studioWeekNumber">45</strong>
+          </div>
           <div class="heading-copy">
             <p class="eyebrow">WEEK AT A GLANCE</p>
             <div class="heading-line">
@@ -184,19 +217,12 @@
           </div>
           <div class="heading-meta">
             <span class="save-state" id="saveState"><span class="status-dot" aria-hidden="true"></span>已保存到本机</span>
-            <span class="meta-sep" aria-hidden="true"></span>
-            <span>拖动每行底边可调高度</span>
           </div>
         </div>
 
         <section class="board-panel" aria-label="一周时间表">
           <div class="board-scroll" id="boardScroll">
             <div class="day-grid" id="dayGrid" aria-live="polite"></div>
-          </div>
-          <div class="board-caption">
-            <span><span class="caption-mark resize-mark" aria-hidden="true"></span>拖动行底边调整格子高度，靠近其他日期的底边会顿挫对齐</span>
-            <span><span class="caption-mark clock-mark" aria-hidden="true"></span>每日右上角可单独编辑时间轴</span>
-            <span class="caption-hint"><svg class="icon"><use href="#i-info"></use></svg>双击查看详情；拖动日程到另一日程可交换</span>
           </div>
         </section>
 
@@ -211,7 +237,6 @@
                 <h2 id="composerTitle">日程块工作台</h2>
               </div>
             </div>
-            <p class="composer-sub">定义颜色和内容，右侧托盘会同步更新</p>
           </div>
 
           <form class="block-form" id="blockForm" autocomplete="off">
@@ -258,12 +283,7 @@
             </div>
             <span class="count-badge" id="paletteCount">0</span>
           </div>
-          <p class="panel-desc">按住卡片拖入空白格；拖到已有日程上可确认替换。</p>
           <div class="palette-list" id="paletteList"></div>
-          <div class="palette-footer">
-            <span class="snap-icon" aria-hidden="true"></span>
-            拖入空白格自动贴合；拖到日程上可替换
-          </div>
         </section>
 
         <section class="trash-panel" id="trashPanel" data-recycle-drop="true" aria-labelledby="trashTitle">
@@ -274,7 +294,6 @@
             </div>
             <span class="count-badge" id="trashCount">0</span>
           </div>
-          <p class="panel-desc">只有工作台或托盘中删除的日程块会进入这里；表格里的安排拖进来会直接移除，模板保留。</p>
           <div class="trash-list" id="trashList"></div>
           <div class="trash-footer">
             <span><svg class="icon"><use href="#i-undo"></use></svg>支持还原</span>
@@ -282,18 +301,6 @@
           </div>
         </section>
 
-        <section class="guide-card">
-          <div class="guide-head">
-            <svg class="icon"><use href="#i-spark"></use></svg>
-            <span>三步开始规划</span>
-          </div>
-          <ol class="guide-list">
-            <li><span>01</span><p>在左下角定义日程块，取一个名字、选一种颜色。</p></li>
-            <li><span>02</span><p>从右侧托盘拖入空白格；拖到已有日程上可替换，拖到另一日程上可交换。</p></li>
-            <li><span>03</span><p>拖动行底边调整高度，靠近其他日期的同一底边会自动对齐。</p></li>
-          </ol>
-          <p class="guide-note"><svg class="icon"><use href="#i-info"></use></svg>日程按日期保存；删除的内容可在回收站还原。</p>
-        </section>
       </aside>
     </main>
 

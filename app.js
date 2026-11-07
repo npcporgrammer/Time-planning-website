@@ -856,6 +856,7 @@
     const ids = [
       'weekRange', 'weekMeta', 'weekPill', 'prevWeek', 'nextWeek', 'thisWeek', 'brandHome',
       'calendarOpen', 'menuButton', 'appMenu', 'saveState', 'dayGrid', 'boardScroll',
+      'railWeek', 'studioWeekNumber',
       'paletteCount', 'paletteList', 'composer', 'blockForm', 'colorSwatches', 'blockColor',
       'customColorFace', 'blockTitle', 'blockSubmit', 'cancelEdit', 'libraryCount', 'libraryList',
       'dragGhost', 'dragTrash', 'resizeTip', 'alignGuide', 'alignGuideLabel', 'toast', 'importFile',
@@ -904,9 +905,12 @@
     const today = getTodayISO();
     const thisWeekStart = toISODate(mondayOf(parseISODate(inRangeISO(today) ? today : DATE_MIN)));
 
+    const weekNumber = String(isoWeekNumber(weekStart)).padStart(2, '0');
     els.weekRange.textContent = formatRange(weekStart);
     els.weekMeta.textContent = `第 ${isoWeekNumber(weekStart)} 周 · ${weekCount} 项安排`;
     els.weekPill.textContent = weekCount ? `${weekCount} 项安排 · 7 天` : '7 天独立时间轴';
+    els.railWeek.textContent = weekNumber;
+    els.studioWeekNumber.textContent = weekNumber;
 
     els.prevWeek.disabled = weekStart <= MIN_WEEK_START;
     els.nextWeek.disabled = weekStart >= MAX_WEEK_START;
@@ -3700,6 +3704,18 @@
       goToToday();
     });
     els.profileButton.addEventListener('click', openProfileDialog);
+
+    document.querySelectorAll('[data-rail-action]').forEach((button) => {
+      button.addEventListener('click', () => {
+        closeTodayPanel();
+        setMenuOpen(false);
+        const action = button.dataset.railAction;
+        if (action === 'today') goToToday();
+        else if (action === 'calendar') openCalendar();
+        else if (action === 'memo') openMemoManager();
+        else if (action === 'profile') openProfileDialog();
+      });
+    });
 
     els.nicknameForm.addEventListener('submit', handleNicknameSubmit);
     els.nicknameInput.addEventListener('input', () => {
