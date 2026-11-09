@@ -108,6 +108,10 @@
           <span class="today-trigger-label">当日待办</span>
           <span class="today-trigger-count" id="todayButtonCount">0</span>
         </button>
+        <button class="btn btn-ghost cycle-trigger" id="cycleOpen" type="button" title="单双周设置" aria-haspopup="dialog">
+          <svg class="icon"><use href="#i-grid"></use></svg>
+          <span class="cycle-trigger-label">单双周设置</span>
+        </button>
         <button class="btn btn-dark" id="calendarOpen" type="button">
           <svg class="icon"><use href="#i-calendar"></use></svg>
           <span>日历</span>
@@ -209,10 +213,20 @@
             <div class="heading-line">
               <h1>贵在坚持，始于计划</h1>
               <span class="outline-pill" id="weekPill">7 天独立时间轴</span>
-              <button class="reuse-week-btn" id="reuseLastWeek" type="button" title="一键复用上周全部安排；已完成项重置，未完成项连同日志顺延">
-                <svg class="icon"><use href="#i-copy"></use></svg>
-                复用上周
-              </button>
+              <span class="reuse-cluster">
+                <button class="reuse-week-btn" id="reuseLastWeek" type="button" title="完全克隆上周表格与日程，克隆后全部重置为未完成">
+                  <svg class="icon"><use href="#i-copy"></use></svg>
+                  复用上周
+                </button>
+                <button class="reuse-week-btn cycle-reuse-btn" id="applyOddWeek" data-cycle="odd" type="button" title="套用单周表到当前周" disabled>
+                  <svg class="icon"><use href="#i-grid"></use></svg>
+                  复用单周
+                </button>
+                <button class="reuse-week-btn cycle-reuse-btn" id="applyEvenWeek" data-cycle="even" type="button" title="套用双周表到当前周" disabled>
+                  <svg class="icon"><use href="#i-grid"></use></svg>
+                  复用双周
+                </button>
+              </span>
             </div>
           </div>
           <div class="heading-meta">
@@ -701,6 +715,69 @@
           </button>
         </div>
       </section>
+    </div>
+  </dialog>
+
+  <dialog class="dialog cycle-dialog" id="cycleDialog" aria-labelledby="cycleTitle">
+    <div class="dialog-head">
+      <div>
+        <p class="eyebrow">WEEK ROTATION</p>
+        <h2 id="cycleTitle">单双周设置</h2>
+      </div>
+      <button class="icon-btn dialog-close" type="button" data-close-dialog="cycleDialog" aria-label="关闭单双周设置">
+        <svg class="icon"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+
+    <div class="dialog-body cycle-body">
+      <p class="cycle-intro">这里保存两张独立课表，不与日历的单双周自动绑定；用时手动选择套用哪一张。</p>
+
+      <div class="cycle-grid">
+        <section class="cycle-card" data-cycle-slot="odd">
+          <div class="cycle-card-head">
+            <span class="cycle-mark">ODD</span>
+            <div>
+              <h3>单周表</h3>
+              <p class="cycle-sub">WEEK A</p>
+            </div>
+          </div>
+          <div class="cycle-state">
+            <span class="cycle-status" id="cycleStatusOdd">未设置</span>
+            <span class="cycle-stats" id="cycleStatsOdd">还没有保存课表</span>
+          </div>
+          <div class="cycle-actions">
+            <button class="btn btn-accent cycle-action" type="button" data-cycle-action="capture" data-cycle-slot="odd">保存当前主界面</button>
+            <button class="btn btn-ghost cycle-action" type="button" data-cycle-action="apply" data-cycle-slot="odd" disabled>套用到主界面</button>
+            <button class="btn btn-ghost cycle-action cycle-clear" type="button" data-cycle-action="clear" data-cycle-slot="odd" disabled>清空</button>
+          </div>
+        </section>
+
+        <section class="cycle-card" data-cycle-slot="even">
+          <div class="cycle-card-head">
+            <span class="cycle-mark">EVEN</span>
+            <div>
+              <h3>双周表</h3>
+              <p class="cycle-sub">WEEK B</p>
+            </div>
+          </div>
+          <div class="cycle-state">
+            <span class="cycle-status" id="cycleStatusEven">未设置</span>
+            <span class="cycle-stats" id="cycleStatsEven">还没有保存课表</span>
+          </div>
+          <div class="cycle-actions">
+            <button class="btn btn-accent cycle-action" type="button" data-cycle-action="capture" data-cycle-slot="even">保存当前主界面</button>
+            <button class="btn btn-ghost cycle-action" type="button" data-cycle-action="apply" data-cycle-slot="even" disabled>套用到主界面</button>
+            <button class="btn btn-ghost cycle-action cycle-clear" type="button" data-cycle-action="clear" data-cycle-slot="even" disabled>清空</button>
+          </div>
+        </section>
+      </div>
+
+      <p class="cycle-hint">自定义：先编辑主界面，再回来点「保存当前主界面」。套用会整体替换当前周表格，并全部重置为未完成。</p>
+    </div>
+
+    <div class="dialog-footer">
+      <span class="dialog-foot-note">单双周只影响你手动套用的课表</span>
+      <button class="btn btn-ghost" type="button" data-close-dialog="cycleDialog">关闭</button>
     </div>
   </dialog>
 

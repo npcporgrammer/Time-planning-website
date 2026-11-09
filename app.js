@@ -279,7 +279,7 @@
     const today = getTodayISO();
     const anchor = inRangeISO(today) ? today : DATE_MIN;
     return {
-      version: 3,
+      version: 4,
       profile: {
         nickname: '',
         joinedAt: '',
@@ -290,6 +290,7 @@
       todos: {},
       trash: [],
       memos: [],
+      weekTemplates: { odd: null, even: null },
       ui: {
         weekStart: toISODate(mondayOf(parseISODate(anchor))),
         selectedDate: anchor
@@ -519,6 +520,55 @@
     return cleaned.length ? cleaned : makeDefaultSegments();
   }
 
+  function normalizeWeekTemplate(rawTemplate, blockIds) {
+    if (!rawTemplate || typeof rawTemplate !== 'object'
+      || !Array.isArray(rawTemplate.days) || rawTemplate.days.length !== 7) {
+      return null;
+    }
+
+    const days = rawTemplate.days.map((rawDay) => {
+      const source = rawDay && typeof rawDay === 'object' ? rawDay : {};
+      const segments = sanitizeSegments(source.segments);
+      const segmentIds = new Set(segments.map((segment) => segment.id));
+      const assignments = {};
+
+      if (source.assignments && typeof source.assignments === 'object') {
+        for (const [segmentId, rawAssignment] of Object.entries(source.assignments)) {
+          if (!segmentIds.has(segmentId)) continue;
+
+          let blockId = '';
+          let data = {};
+          if (typeof rawAssignment === 'string') {
+            blockId = rawAssignment;
+          } else if (rawAssignment && typeof rawAssignment === 'object') {
+            blockId = typeof rawAssignment.blockId === 'string' ? rawAssignment.blockId : '';
+            data = rawAssignment;
+          }
+
+          if (blockId && blockIds.has(blockId)) {
+            assignments[segmentId] = makeAssignment(blockId, data);
+          }
+        }
+      }
+
+      return { segments, assignments };
+    });
+
+    const savedAt = Number(rawTemplate.savedAt);
+    return {
+      days,
+      savedAt: Number.isFinite(savedAt) ? savedAt : Date.now()
+    };
+  }
+
+  function normalizeWeekTemplates(rawTemplates, blockIds) {
+    const raw = rawTemplates && typeof rawTemplates === 'object' ? rawTemplates : {};
+    return {
+      odd: normalizeWeekTemplate(raw.odd, blockIds),
+      even: normalizeWeekTemplate(raw.even, blockIds)
+    };
+  }
+
   function normalizeState(raw) {
     if (!raw || typeof raw !== 'object') throw new Error('Invalid state');
     if (!Array.isArray(raw.blocks) || !raw.days || typeof raw.days !== 'object') {
@@ -593,13 +643,14 @@
 
     const updatedAt = Number(raw.updatedAt);
     return {
-      version: 3,
+      version: 4,
       profile: normalizeProfile(raw.profile),
       blocks,
       days,
       todos: normalizeTodos(raw.todos),
       trash: normalizeTrash(raw.trash),
       memos: normalizeMemos(raw.memos),
+      weekTemplates: normalizeWeekTemplates(raw.weekTemplates, blockIds),
       ui: { weekStart, selectedDate },
       updatedAt: Number.isFinite(updatedAt) ? updatedAt : Date.now()
     };
@@ -889,7 +940,9 @@
       'detailStatus', 'detailCompleteBtn', 'detailToggleHint',
       'blockNoteDialog', 'blockNoteSub', 'blockNoteColorDot', 'blockNoteInput',
       'blockNoteHint', 'blockNoteSave',
-      'reuseLastWeek',
+      'reuseLastWeek', 'applyOddWeek', 'applyEvenWeek',
+      'cycleOpen', 'cycleDialog', 'cycleStatusOdd', 'cycleStatsOdd',
+      'cycleStatusEven', 'cycleStatsEven',
       'lateReminderDialog', 'lateReminderSub', 'lateReminderList',
       'todayButton', 'todayButtonCount', 'todayPanel', 'todayClose',
       'todoPrevDate', 'todoDateInput', 'todoNextDate', 'todoToday',
@@ -931,7 +984,14 @@
     els.reuseLastWeek.disabled = weekStart <= MIN_WEEK_START;
     els.reuseLastWeek.title = weekStart <= MIN_WEEK_START
       ? '已经是最早的一周，没有可复用的上周'
-      : '一键复用上周全部安排；已完成项重置，未完成项连同日志顺延';
+      : '完全克隆上周表格、时间轴、行高和全部日程；克隆后统一重置为未完成，本周表格整体替换';
+
+    const hasOddTemplate = Boolean(state.weekTemplates.odd);
+    const hasEvenTemplate = Boolean(state.weekTemplates.even);
+    els.applyOddWeek.disabled = !hasOddTemplate;
+    els.applyEvenWeek.disabled = !hasEvenTemplate;
+    els.applyOddWeek.title = hasOddTemplate ? '套用单周表到当前周' : '单周表还没有设置';
+    els.applyEvenWeek.title = hasEvenTemplate ? '套用双周表到当前周' : '双周表还没有设置';
 
     if (thisWeekStart === weekStart) {
       els.thisWeek.textContent = '本周';
@@ -2242,79 +2302,79 @@
     if (!prevStart) return null;
 
     const prevDates = getWeekDates(prevStart);
-    const selected = [];
+    const targetDates = getWeekDates(state.ui.weekStart);
+    const clonedDays = {};
     let total = 0;
-    let unfinished = 0;
-    let completed = 0;
-
-    for (const date of prevDates) {
-      if (!inRangeISO(date)) continue;
-      const day = state.days[date];
-      if (!day) continue;
-
-      for (const segment of day.segments) {
-        const assignment = day.assignments[segment.id];
-        if (!assignment) continue;
-        const block = getBlock(assignment.blockId);
-        if (!block) continue;
-
-        total += 1;
-        if (assignment.completed) completed += 1;
-        else unfinished += 1;
-        selected.push({ sourceDate: date, segment, assignment, block });
-      }
-    }
-
-    const items = [];
-    const plannedTargets = new Set();
-    let skippedTime = 0;
-    let skippedOccupied = 0;
+    let copiedSegments = 0;
+    let sourceDayCount = 0;
+    let skippedBlocks = 0;
     let skippedRange = 0;
 
-    for (const source of selected) {
-      const targetDate = toISODate(addDays(parseISODate(source.sourceDate), 7));
-      if (!inRangeISO(targetDate)) {
+    for (let index = 0; index < prevDates.length; index += 1) {
+      const sourceDate = prevDates[index];
+      const targetDate = targetDates[index];
+      if (!inRangeISO(sourceDate) || !inRangeISO(targetDate)) {
         skippedRange += 1;
         continue;
       }
 
-      const targetDay = ensureDay(targetDate);
-      const targetSegment = targetDay.segments.find((segment) => {
-        return segment.start === source.segment.start && segment.end === source.segment.end;
-      }) || targetDay.segments.find((segment) => segment.start === source.segment.start);
-
-      if (!targetSegment) {
-        skippedTime += 1;
+      const sourceDay = state.days[sourceDate];
+      if (!sourceDay) {
+        clonedDays[targetDate] = null;
         continue;
       }
 
-      const targetKey = `${targetDate}::${targetSegment.id}`;
-      if (targetDay.assignments[targetSegment.id] || plannedTargets.has(targetKey)) {
-        skippedOccupied += 1;
-        continue;
-      }
-
-      plannedTargets.add(targetKey);
-      items.push({
-        targetDate,
-        targetSegmentId: targetSegment.id,
-        sourceDate: source.sourceDate,
-        segment: source.segment,
-        assignment: source.assignment,
-        block: source.block
+      sourceDayCount += 1;
+      const segmentIdMap = new Map();
+      const segments = sourceDay.segments.map((segment) => {
+        const id = uid('seg');
+        segmentIdMap.set(segment.id, id);
+        return {
+          id,
+          start: segment.start,
+          end: segment.end,
+          height: segment.height
+        };
       });
+
+      const assignments = {};
+      for (const segment of sourceDay.segments) {
+        const assignment = sourceDay.assignments[segment.id];
+        if (!assignment) continue;
+        const block = getBlock(assignment.blockId);
+        if (!block) {
+          skippedBlocks += 1;
+          continue;
+        }
+
+        assignments[segmentIdMap.get(segment.id)] = makeAssignment(block.id, {
+          note: assignment.note,
+          completed: false,
+          createdAt: assignment.createdAt
+        });
+        total += 1;
+      }
+
+      clonedDays[targetDate] = { segments, assignments };
+      copiedSegments += segments.length;
+    }
+
+    let clearedAssignments = 0;
+    for (const targetDate of targetDates) {
+      const targetDay = state.days[targetDate];
+      if (targetDay) clearedAssignments += Object.keys(targetDay.assignments).length;
     }
 
     return {
       prevStart,
       prevDates,
+      targetDates,
+      clonedDays,
       total,
-      unfinished,
-      completed,
-      selectedCount: selected.length,
-      items,
-      skippedTime,
-      skippedOccupied,
+      copiedSegments,
+      clearedAssignments,
+      sourceDayCount,
+      skippedBlocks,
       skippedRange
     };
   }
@@ -2327,18 +2387,18 @@
     }
 
     const plan = buildReusePlan();
-    if (!plan || !plan.total) {
-      showToast('上周还没有放置任何日程，暂时没有可复用的内容。', 'warning');
+    if (!plan) {
+      showToast('无法读取上周表格。', 'warning');
       return;
     }
 
-    if (!plan.items.length) {
-      const skipped = plan.skippedTime + plan.skippedOccupied + plan.skippedRange;
-      showToast(
-        `上周有 ${plan.total} 项安排，但本周没有可填入的匹配时间格${skipped ? `（${skipped} 项冲突或时间轴不匹配）` : ''}。`,
-        'warning',
-        3800
-      );
+    if (plan.skippedRange) {
+      showToast('目标周有日期超出允许范围，已取消完整克隆。', 'warning');
+      return;
+    }
+
+    if (!plan.sourceDayCount) {
+      showToast('上周还没有可克隆的表格内容。', 'warning');
       return;
     }
 
@@ -2346,37 +2406,183 @@
   }
 
   function applyReusePlan(plan) {
-    if (!plan || !plan.items.length) return;
+    if (!plan || !plan.sourceDayCount) return;
 
-    let applied = 0;
-    for (const item of plan.items) {
-      const targetDay = ensureDay(item.targetDate);
-      const targetSegment = targetDay.segments.find((segment) => segment.id === item.targetSegmentId);
-      if (!targetSegment || targetDay.assignments[targetSegment.id]) continue;
-
-      targetDay.assignments[targetSegment.id] = makeAssignment(item.block.id, {
-        note: item.assignment.completed ? '' : item.assignment.note,
-        completed: false,
-        createdAt: Date.now()
-      });
-      applied += 1;
+    for (const targetDate of plan.targetDates) {
+      delete state.days[targetDate];
     }
 
-    const preSkipped = plan.skippedTime + plan.skippedOccupied + plan.skippedRange;
-    const skipped = preSkipped + (plan.items.length - applied);
+    for (const [targetDate, day] of Object.entries(plan.clonedDays)) {
+      if (day) state.days[targetDate] = day;
+    }
+    for (const targetDate of plan.targetDates) {
+      ensureDay(targetDate);
+    }
+
     saveState();
     renderAll();
 
-    if (!applied) {
-      showToast('没有可带入的日程，请检查本周时间格是否已满。', 'warning');
-      return;
+    const details = ['全部重置为未完成'];
+    if (plan.clearedAssignments) {
+      details.push(`替换本周原有 ${plan.clearedAssignments} 项安排`);
+    }
+    if (plan.skippedBlocks) {
+      details.push(`${plan.skippedBlocks} 项缺少日程块`);
     }
 
     showToast(
-      skipped
-        ? `已一键复用 ${applied} 项日程，${skipped} 项因时间轴或冲突跳过。`
-        : `已一键复用 ${applied} 项日程，未完成内容已顺延到本周。`
+      `已完全克隆上周表格（${plan.copiedSegments} 个时间格）与 ${plan.total} 项日程（${details.join('，')}）。`
     );
+  }
+
+  /* ------------------------------------------------------------------------
+     Odd / even week templates
+     ------------------------------------------------------------------------ */
+
+  function getCycleLabel(slot) {
+    return slot === 'even' ? '双周表' : '单周表';
+  }
+
+  function cloneWeekDay(day, resetCompleted = false) {
+    const sourceDay = day || { segments: makeDefaultSegments(), assignments: {} };
+    const segmentIdMap = new Map();
+    const segments = sourceDay.segments.map((segment) => {
+      const id = uid('seg');
+      segmentIdMap.set(segment.id, id);
+      return {
+        id,
+        start: segment.start,
+        end: segment.end,
+        height: segment.height
+      };
+    });
+
+    const assignments = {};
+    for (const [sourceId, assignment] of Object.entries(sourceDay.assignments)) {
+      const targetId = segmentIdMap.get(sourceId);
+      if (!targetId || !getBlock(assignment.blockId)) continue;
+      assignments[targetId] = makeAssignment(assignment.blockId, {
+        note: assignment.note,
+        completed: resetCompleted ? false : assignment.completed,
+        createdAt: assignment.createdAt
+      });
+    }
+
+    return { segments, assignments };
+  }
+
+  function getWeekTemplateStats(template) {
+    let segments = 0;
+    let assignments = 0;
+    if (!template) return { segments, assignments };
+    for (const day of template.days) {
+      segments += day.segments.length;
+      assignments += Object.keys(day.assignments).length;
+    }
+    return { segments, assignments };
+  }
+
+  function formatTemplateSavedAt(savedAt) {
+    const date = new Date(savedAt);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function renderCycleSettings() {
+    for (const slot of ['odd', 'even']) {
+      const template = state.weekTemplates[slot];
+      const status = slot === 'odd' ? els.cycleStatusOdd : els.cycleStatusEven;
+      const stats = slot === 'odd' ? els.cycleStatsOdd : els.cycleStatsEven;
+      const card = els.cycleDialog.querySelector(`[data-cycle-slot="${slot}"]`);
+      if (!status || !stats || !card) continue;
+
+      card.classList.toggle('is-set', Boolean(template));
+      status.textContent = template ? '已设置' : '未设置';
+      if (template) {
+        const summary = getWeekTemplateStats(template);
+        stats.textContent = `${summary.segments} 个时间格 · ${summary.assignments} 项日程 · ${formatTemplateSavedAt(template.savedAt)}`;
+      } else {
+        stats.textContent = '还没有保存课表';
+      }
+
+      card.querySelectorAll('[data-cycle-action]').forEach((button) => {
+        if (button.dataset.cycleAction !== 'capture') {
+          button.disabled = !template;
+        }
+      });
+    }
+  }
+
+  function openCycleSettings() {
+    closeTodayPanel();
+    setMenuOpen(false);
+    renderCycleSettings();
+    if (!els.cycleDialog.open) els.cycleDialog.showModal();
+  }
+
+  function captureCurrentWeekTemplate(slot) {
+    const dates = getWeekDates(state.ui.weekStart);
+    const days = dates.map((date) => cloneWeekDay(ensureDay(date), false));
+    state.weekTemplates[slot] = { days, savedAt: Date.now() };
+    saveState();
+    renderCycleSettings();
+    renderHeader();
+    showToast(`已把当前主界面保存为${getCycleLabel(slot)}。`);
+  }
+
+  function applyWeekTemplate(slot) {
+    const template = state.weekTemplates[slot];
+    const label = getCycleLabel(slot);
+    if (!template) {
+      showToast(`${label}还没有设置，请先在单双周设置里保存一张课表。`, 'warning');
+      return;
+    }
+
+    closeTodayPanel();
+    setMenuOpen(false);
+    const dates = getWeekDates(state.ui.weekStart);
+    let cleared = 0;
+    let segments = 0;
+    let assignments = 0;
+
+    dates.forEach((date, index) => {
+      const targetDay = state.days[date];
+      if (targetDay) cleared += Object.keys(targetDay.assignments).length;
+      const cloned = cloneWeekDay(template.days[index], true);
+      state.days[date] = cloned;
+      segments += cloned.segments.length;
+      assignments += Object.keys(cloned.assignments).length;
+    });
+
+    saveState();
+    renderAll();
+    if (els.cycleDialog.open) els.cycleDialog.close();
+
+    const detail = cleared ? `，替换原有 ${cleared} 项安排` : '';
+    showToast(`已套用${label}到本周（7 天 · ${segments} 个时间格 · ${assignments} 项日程，全部未完成${detail}）。`);
+  }
+
+  function clearWeekTemplate(slot) {
+    const label = getCycleLabel(slot);
+    if (!state.weekTemplates[slot]) return;
+
+    askConfirm({
+      title: `清空${label}？`,
+      message: `只会删除保存的${label}，不会影响当前周的日程。`,
+      confirmText: '清空',
+      onConfirm: () => {
+        state.weekTemplates[slot] = null;
+        saveState();
+        renderCycleSettings();
+        renderHeader();
+        showToast(`${label}已清空。`);
+      }
+    });
   }
 
   /* ------------------------------------------------------------------------
@@ -3769,19 +3975,20 @@
   function clearAllData() {
     askConfirm({
       title: '清空全部数据？',
-      message: '所有日期的时间轴、日程安排、日程块、小事清单、长期备忘和回收站都会被删除，且无法撤销。昵称与打卡记录会保留。建议先导出备份。',
+      message: '所有日期的时间轴、日程安排、日程块、小事清单、长期备忘、单双周表和回收站都会被删除，且无法撤销。昵称与打卡记录会保留。建议先导出备份。',
       confirmText: '全部清空',
       onConfirm: () => {
         const weekStart = state.ui.weekStart;
         const selectedDate = state.ui.selectedDate;
         state = {
-          version: 3,
+          version: 4,
           profile: state.profile,
           blocks: [],
           days: {},
           todos: {},
           trash: [],
           memos: [],
+          weekTemplates: { odd: null, even: null },
           ui: { weekStart, selectedDate },
           updatedAt: Date.now()
         };
@@ -3881,6 +4088,18 @@
     });
 
     els.reuseLastWeek.addEventListener('click', reusePreviousWeek);
+    els.applyOddWeek.addEventListener('click', () => applyWeekTemplate('odd'));
+    els.applyEvenWeek.addEventListener('click', () => applyWeekTemplate('even'));
+    els.cycleOpen.addEventListener('click', openCycleSettings);
+    els.cycleDialog.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-cycle-action]');
+      if (!button) return;
+      const slot = button.dataset.cycleSlot;
+      const action = button.dataset.cycleAction;
+      if (action === 'capture') captureCurrentWeekTemplate(slot);
+      else if (action === 'apply') applyWeekTemplate(slot);
+      else if (action === 'clear') clearWeekTemplate(slot);
+    });
 
     els.lateReminderList.addEventListener('click', (event) => {
       const item = event.target.closest('[data-late-kind]');
