@@ -23,9 +23,20 @@
   --radius-lg: 18px;
   --radius-md: 12px;
   --font-sans: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Segoe UI", sans-serif;
-  --font-display: "Songti SC", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  /* 三套基础字体栈，四种组合在文件末尾的 [data-font] 规则里切换 */
+  --stack-song: "Songti SC", "SimSun", "宋体", "STSong", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  --stack-kai: "Kaiti SC", "KaiTi", "楷体", "STKaiti", "Songti SC", "SimSun", serif;
+  --stack-sans: var(--font-sans);
+  --font-body: var(--stack-kai);
+  --font-display: var(--stack-song);
   --topbar-height: 64px;
 }
+
+/* 字体方案：正文 body / 标题 display，只改字体，不动排版 */
+[data-font="kai"] { --font-body: var(--stack-kai); --font-display: var(--stack-song); }
+[data-font="song"] { --font-body: var(--stack-song); --font-display: var(--stack-song); }
+[data-font="mixed"] { --font-body: var(--stack-sans); --font-display: var(--stack-song); }
+[data-font="sans"] { --font-body: var(--stack-sans); --font-display: var(--stack-sans); }
 
 *,
 *::before,
@@ -47,7 +58,7 @@ body {
     radial-gradient(900px 560px at -8% -8%, rgba(192, 155, 99, 0.16), transparent 66%),
     radial-gradient(780px 520px at 104% -4%, rgba(83, 124, 103, 0.12), transparent 62%),
     linear-gradient(180deg, #f5f2eb 0%, #f1eee6 58%, #efebe2 100%);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -226,7 +237,7 @@ svg {
   overflow: hidden;
   max-width: 100%;
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.005em;
@@ -2962,7 +2973,7 @@ body.is-dragging * {
   flex: 0 0 auto;
   padding-top: 1px;
   color: #c7a871;
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 10px;
   font-weight: 700;
 }
@@ -3409,7 +3420,7 @@ body.is-dragging * {
 
 .row-index {
   color: var(--muted-light);
-  font-family: var(--font-display);
+  font-family: var(--font-body);
   font-size: 9px;
   font-weight: 700;
   text-align: center;
@@ -3984,7 +3995,7 @@ body.is-dragging * {
   outline: 0;
   background: var(--surface-strong);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 11.5px;
   line-height: 1.7;
   resize: vertical;
@@ -4364,7 +4375,7 @@ body.is-dragging * {
   outline: 0;
   background: var(--surface-strong);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: 11px;
   transition: border-color 0.16s ease, box-shadow 0.16s ease;
 }
@@ -5851,7 +5862,7 @@ body {
   color: var(--studio-ink);
   background: var(--accent);
   box-shadow: 3px 3px 0 #f5f0e2;
-  font-family: "Arial Black", var(--font-sans);
+  font-family: var(--font-display);
   font-size: 23px;
   font-weight: 900;
   line-height: 1;
@@ -5890,7 +5901,7 @@ body {
 
 .rail-week strong {
   color: var(--accent);
-  font-family: "Arial Black", var(--font-sans);
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
@@ -5977,7 +5988,7 @@ body {
   color: var(--studio-ink);
   background: var(--accent);
   box-shadow: 3px 3px 0 var(--studio-ink);
-  font-family: "Arial Black", var(--font-sans);
+  font-family: var(--font-display);
   transform: rotate(-3deg);
 }
 
@@ -6169,7 +6180,7 @@ body {
 }
 
 .stage-stamp strong {
-  font-family: "Arial Black", var(--font-sans);
+  font-family: var(--font-display);
   font-size: 43px;
   font-weight: 900;
   line-height: 0.9;
@@ -6356,7 +6367,7 @@ body {
 
 .day-date strong {
   color: var(--studio-ink);
-  font-family: "Arial Black", var(--font-sans);
+  font-family: var(--font-display);
   font-size: 34px;
   font-weight: 900;
   line-height: 0.83;
@@ -7454,5 +7465,133 @@ body {
 
   .cycle-actions .btn {
     font-size: 7.5px;
+  }
+}
+
+/* ------------------------------------------------------------------------
+   字体设置
+   ------------------------------------------------------------------------ */
+
+.font-dialog {
+  width: min(680px, calc(100vw - 28px));
+}
+
+.font-dialog-body {
+  max-height: calc(100vh - 230px);
+  padding: 0 24px 20px;
+  overflow-y: auto;
+}
+
+.font-intro {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.font-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.font-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 13px 14px;
+  border: 2px solid var(--studio-ink);
+  border-radius: 12px;
+  background: var(--studio-paper);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 0 0 var(--studio-ink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.font-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--studio-ink);
+}
+
+.font-card.is-active {
+  background: var(--surface-strong);
+  box-shadow: 4px 4px 0 var(--studio-ink);
+}
+
+.font-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.font-card-name {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.font-card.is-active .font-card-name::before {
+  content: "✓ ";
+}
+
+.font-card-tag {
+  margin-left: auto;
+  padding: 1px 7px;
+  border: 1px solid var(--studio-ink);
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.font-card-sample {
+  display: block;
+  padding-top: 2px;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.font-card-desc {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.font-hint {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--studio-cobalt);
+  background: rgba(247, 244, 237, 0.6);
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.7;
+}
+
+[data-font-choice="song"] .font-card-name { font-family: var(--stack-song); }
+[data-font-choice="kai"] .font-card-name { font-family: var(--stack-song); }
+[data-font-choice="mixed"] .font-card-name { font-family: var(--stack-song); }
+[data-font-choice="sans"] .font-card-name { font-family: var(--stack-sans); }
+
+[data-font-choice="song"] .font-card-sample { font-family: var(--stack-song); }
+[data-font-choice="kai"] .font-card-sample { font-family: var(--stack-kai); }
+[data-font-choice="mixed"] .font-card-sample { font-family: var(--stack-sans); }
+[data-font-choice="sans"] .font-card-sample { font-family: var(--stack-sans); }
+
+@media (max-width: 560px) {
+  .font-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .font-dialog-body {
+    padding-right: 18px;
+    padding-left: 18px;
   }
 }

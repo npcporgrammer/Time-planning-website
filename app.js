@@ -6,6 +6,8 @@
      ------------------------------------------------------------------------ */
 
   const STORAGE_KEY = 'zhouji-weekly-planner-v1';
+  const FONT_KEY = 'zhouji-planner-font-v1';
+  const FONT_CHOICES = ['kai', 'song', 'mixed', 'sans'];
   const DATE_MIN = '2026-01-01';
   const DATE_MAX = '2029-12-31';
   const DEFAULT_ROW_HEIGHT = 70;
@@ -4008,6 +4010,45 @@
      Event binding and init
      ------------------------------------------------------------------------ */
 
+  /* 字体方案：只存一个偏好值，不写进日程数据，导出备份也不会带上 */
+  function readFontChoice() {
+    try {
+      const saved = window.localStorage.getItem(FONT_KEY);
+      return FONT_CHOICES.includes(saved) ? saved : 'kai';
+    } catch (error) {
+      return 'kai';
+    }
+  }
+
+  function syncFontChoice(current) {
+    const active = current || document.documentElement.getAttribute('data-font') || 'kai';
+    document.querySelectorAll('[data-font-choice]').forEach((button) => {
+      const on = button.dataset.fontChoice === active;
+      button.classList.toggle('is-active', on);
+      button.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function applyFontChoice(name, persist) {
+    const next = FONT_CHOICES.includes(name) ? name : 'kai';
+    document.documentElement.setAttribute('data-font', next);
+    if (persist) {
+      try {
+        window.localStorage.setItem(FONT_KEY, next);
+      } catch (error) {
+        /* 隐私模式下写入失败就只在本次生效 */
+      }
+    }
+    syncFontChoice(next);
+  }
+
+  function openFontDialog() {
+    const dialog = document.getElementById('fontDialog');
+    if (!dialog) return;
+    syncFontChoice();
+    if (!dialog.open) dialog.showModal();
+  }
+
   function handleMenuAction(action) {
     setMenuOpen(false);
     if (action === 'export') exportBackup();
@@ -4015,6 +4056,7 @@
       els.importFile.value = '';
       els.importFile.click();
     }
+    if (action === 'font') openFontDialog();
     if (action === 'clear-week') clearWeekAssignments();
     if (action === 'clear-all') clearAllData();
   }
@@ -4167,6 +4209,14 @@
       const item = event.target.closest('[data-menu-action]');
       if (item) handleMenuAction(item.dataset.menuAction);
     });
+    const fontGrid = document.getElementById('fontGrid');
+    if (fontGrid) {
+      fontGrid.addEventListener('click', (event) => {
+        const choice = event.target.closest('[data-font-choice]');
+        if (!choice) return;
+        applyFontChoice(choice.dataset.fontChoice, true);
+      });
+    }
     document.addEventListener('click', (event) => {
       if (menuOpen && !event.target.closest('.menu-wrap')) setMenuOpen(false);
       if (todayPanelOpen
@@ -4344,6 +4394,7 @@
     populateCalendarSelects();
     renderColorSwatches();
     bindEvents();
+    applyFontChoice(readFontChoice(), false);
 
     const loaded = loadState();
     state = loaded.value;
