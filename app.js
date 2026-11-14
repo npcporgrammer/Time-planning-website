@@ -759,6 +759,28 @@
     return getBlockPlacements(blockId).some(({ assignment }) => assignment.note && assignment.note.trim());
   }
 
+  /**
+   * 日程块的日志描述是“一份描述、多处引用”：
+   * 写入模板的 description，同时把同一个 blockId 的所有已放置日程的 note 一起刷新，
+   * 这样无论从托盘还是从表格详情修改，日程表里的相同日程块都会保持同步。
+   */
+  function syncBlockLogDescription(blockId, text) {
+    const block = getBlock(blockId);
+    if (!block) return 0;
+    const value = typeof text === 'string' ? text.slice(0, 2000) : '';
+    block.description = value;
+    let synced = 0;
+    for (const day of Object.values(state.days)) {
+      for (const assignment of Object.values(day.assignments || {})) {
+        if (assignment && assignment.blockId === blockId) {
+          assignment.note = value;
+          synced += 1;
+        }
+      }
+    }
+    return synced;
+  }
+
   function getAssignment(date, segmentId) {
     const day = state.days[date];
     if (!day) return null;
@@ -939,6 +961,7 @@
       'checkinStatus', 'checkinTotal', 'checkinStreak', 'scheduledTotal', 'completedTotal',
       'checkinTodayText', 'profileCheckin', 'profileNicknameForm', 'profileNickname',
       'detailDialog', 'detailColorDot', 'detailTitle', 'detailWhen', 'detailNote',
+      'detailNoteLabel', 'detailNoteHint',
       'detailStatus', 'detailCompleteBtn', 'detailToggleHint',
       'blockNoteDialog', 'blockNoteSub', 'blockNoteColorDot', 'blockNoteInput',
       'blockNoteHint', 'blockNoteSave',
@@ -2915,10 +2938,20 @@
     els.detailTitle.textContent = block.title;
     els.detailWhen.textContent = `${formatChineseDate(date)} · ${segment.start}–${segment.end}`;
     els.detailColorDot.style.setProperty('--detail-color', normalizeHex(block.color) || COLOR_PALETTE[0]);
-    els.detailNote.value = assignment.note || '';
+    els.detailNote.value = assignment.note || block.description || '';
+    updateDetailNoteCopy(block);
     updateDetailState();
     if (!els.detailDialog.open) els.detailDialog.showModal();
     window.setTimeout(() => els.detailNote.focus(), 40);
+  }
+
+  function updateDetailNoteCopy(block) {
+    const count = countBlockUsage(block.id);
+    els.detailNoteLabel.textContent = `更多日志描述 · 共 ${count} 处`;
+    els.detailNote.placeholder = `为「${block.title}」补充日志描述…`;
+    els.detailNoteHint.textContent = count > 1
+      ? `修改后会一起更新日程表里「${block.title}」的 ${count} 个日程，以及托盘里这个日程块本身的描述。`
+      : `修改后会更新托盘里这个日程块本身的描述；下次拖入时间格时会自动带上。`;
   }
 
   function updateDetailState() {
@@ -2945,9 +2978,9 @@
     if (!detailContext) return;
     const assignment = getAssignment(detailContext.date, detailContext.segmentId);
     if (!assignment) return;
-    assignment.note = els.detailNote.value;
-    const block = getBlock(assignment.blockId);
-    if (block) block.description = assignment.note;
+    const text = els.detailNote.value;
+    assignment.note = text;
+    syncBlockLogDescription(assignment.blockId, text);
     detailContext.dirty = true;
     window.clearTimeout(detailSaveTimer);
     detailSaveTimer = window.setTimeout(() => {
@@ -2962,9 +2995,11 @@
     if (!detailContext) return false;
     const assignment = getAssignment(detailContext.date, detailContext.segmentId);
     if (!assignment) return false;
-    assignment.note = els.detailNote.value;
-    const block = getBlock(assignment.blockId);
-    if (block) block.description = assignment.note;
+    if (detailContext.dirty) {
+      const text = els.detailNote.value;
+      assignment.note = text;
+      syncBlockLogDescription(assignment.blockId, text);
+    }
     saveState({ silent: true });
     return detailContext.dirty;
   }
@@ -3024,17 +3059,7 @@
     if (!block) return;
 
     const text = els.blockNoteInput.value.slice(0, 2000);
-    block.description = text;
-
-    let synced = 0;
-    for (const day of Object.values(state.days)) {
-      for (const assignment of Object.values(day.assignments || {})) {
-        if (assignment && assignment.blockId === block.id) {
-          assignment.note = text;
-          synced += 1;
-        }
-      }
-    }
+    const synced = syncBlockLogDescription(block.id, text);
 
     saveState();
     if (els.blockNoteDialog.open) els.blockNoteDialog.close();
